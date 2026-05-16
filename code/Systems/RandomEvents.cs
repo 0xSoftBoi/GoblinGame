@@ -20,6 +20,7 @@ public sealed class RandomEvents : Component
 
 	private float _timer;
 	private Random _rng = new();
+	private bool _hashBoostActive = false;
 
 	protected override void OnStart()
 	{
@@ -83,7 +84,9 @@ public sealed class RandomEvents : Component
 
 	private void EventHashBoost()
 	{
-		// Double everyone's hash rate for 15 seconds
+		if ( _hashBoostActive ) return;
+		_hashBoostActive = true;
+
 		foreach ( var w in Scene.GetAllComponents<CryptoWallet>() )
 		{
 			w.HashRate *= 2f;
@@ -103,6 +106,7 @@ public sealed class RandomEvents : Component
 		{
 			w.HashRate *= 0.5f;
 		}
+		_hashBoostActive = false;
 	}
 
 	private void EventPowerOutage()

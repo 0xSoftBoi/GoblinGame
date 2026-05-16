@@ -103,7 +103,7 @@ public sealed class PlayerInput : Component
 		var phone = Scene.GetAllComponents<UI.GoblinPhone>().FirstOrDefault();
 		if ( phone is not null )
 		{
-			phone.IsVisible = _phoneOpen;
+			phone.IsOpen = _phoneOpen;
 		}
 
 		// Close token creator if phone opens
@@ -111,7 +111,7 @@ public sealed class PlayerInput : Component
 		{
 			_tokenCreatorOpen = false;
 			var tc = Scene.GetAllComponents<UI.TokenCreator>().FirstOrDefault();
-			if ( tc is not null ) tc.IsVisible = false;
+			if ( tc is not null ) tc.IsOpen = false;
 		}
 	}
 
@@ -132,7 +132,7 @@ public sealed class PlayerInput : Component
 		var creator = Scene.GetAllComponents<UI.TokenCreator>().FirstOrDefault();
 		if ( creator is not null )
 		{
-			creator.IsVisible = _tokenCreatorOpen;
+			creator.IsOpen = _tokenCreatorOpen;
 		}
 
 		// Close phone if creator opens
@@ -140,7 +140,7 @@ public sealed class PlayerInput : Component
 		{
 			_phoneOpen = false;
 			var phone = Scene.GetAllComponents<UI.GoblinPhone>().FirstOrDefault();
-			if ( phone is not null ) phone.IsVisible = false;
+			if ( phone is not null ) phone.IsOpen = false;
 		}
 	}
 

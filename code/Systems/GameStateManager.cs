@@ -165,6 +165,7 @@ public sealed class GameStateManager : Component
 				IsRugPullWindow = true;
 				_rugPullTimer = RugPullWindowDuration;
 				BroadcastRugWindowOpen();
+				ShowRugPullPrompts();
 
 				// Trigger market chaos
 				var market = Scene.GetAllComponents<CryptoMarket>().FirstOrDefault();
@@ -192,6 +193,34 @@ public sealed class GameStateManager : Component
 				IsRugPullWindow = false;
 				break;
 		}
+	}
+
+	// --- Rug Pull Prompt ---
+
+	[Rpc.Broadcast]
+	private void ShowRugPullPrompts()
+	{
+		var tokenSystem = Scene.GetAllComponents<TokenSystem>().FirstOrDefault();
+		if ( tokenSystem is null ) return;
+
+		var myPlayer = Scene.GetAllComponents<GoblinPlayer>()
+			.FirstOrDefault( p => !p.IsProxy );
+		if ( myPlayer is null ) return;
+
+		Guid myTokenId = Guid.Empty;
+		foreach ( var kv in tokenSystem.ActiveTokens )
+		{
+			if ( kv.Value.CreatorId == myPlayer.Id && !kv.Value.IsRugged )
+			{
+				myTokenId = kv.Value.Id;
+				break;
+			}
+		}
+
+		if ( myTokenId == Guid.Empty ) return;
+
+		var prompt = Scene.GetAllComponents<UI.RugPullPrompt>().FirstOrDefault();
+		prompt?.ShowForToken( myTokenId );
 	}
 
 	// --- Match Setup ---
