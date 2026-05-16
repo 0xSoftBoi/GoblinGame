@@ -64,6 +64,8 @@ public sealed class OfficeSetup : Component
 		SpawnDeskLayout();
 		SpawnUtilityStations();
 		SpawnDecorations();
+		SpawnMarketBoard();
+		SpawnPosters();
 
 		Log.Info( $"Office spawned: {EraNames[OfficeEra]} ({_spawnedProps.Count} props)" );
 	}
@@ -206,8 +208,72 @@ public sealed class OfficeSetup : Component
 		}
 	}
 
+	private void SpawnMarketBoard()
+	{
+		// Large flat board at the north wall center, facing into the room
+		var pos = OfficeCenter + new Vector3( 0, OfficeDepth * 0.42f, 150f );
+		var rot = Rotation.FromYaw( 180f ); // face south into the room
+
+		var go = Scene.CreateObject();
+		go.Name = "MarketBoard";
+		go.WorldPosition = pos;
+		go.WorldRotation = rot;
+		go.Tags.Add( "prop" );
+
+		// Backing panel — a thin flat box
+		var renderer = go.Components.Create<ModelRenderer>();
+		renderer.Model = Model.Load( "models/dev/box.vmdl" );
+		renderer.Tint = new Color( 0.08f, 0.08f, 0.08f );
+		go.LocalScale = new Vector3( 420f, 10f, 200f );
+
+		go.Components.Create<MarketBoardDisplay>();
+		go.NetworkSpawn();
+		_spawnedProps.Add( go );
+	}
+
+	private void SpawnPosters()
+	{
+		// Wall positions: east and west walls, spread along Y axis
+		(Vector3 pos, float yaw)[] placements =
+		{
+			// West wall
+			( OfficeCenter + new Vector3( -OfficeWidth * 0.44f, -200f, 160f ),  90f ),
+			( OfficeCenter + new Vector3( -OfficeWidth * 0.44f,    0f, 160f ),  90f ),
+			( OfficeCenter + new Vector3( -OfficeWidth * 0.44f,  200f, 160f ),  90f ),
+			// East wall
+			( OfficeCenter + new Vector3(  OfficeWidth * 0.44f, -200f, 160f ), -90f ),
+			( OfficeCenter + new Vector3(  OfficeWidth * 0.44f,  100f, 160f ), -90f ),
+			// South wall
+			( OfficeCenter + new Vector3( -150f, -OfficeDepth * 0.44f, 160f ),   0f ),
+			( OfficeCenter + new Vector3(  150f, -OfficeDepth * 0.44f, 160f ),   0f ),
+			( OfficeCenter + new Vector3(  400f, -OfficeDepth * 0.44f, 160f ),   0f ),
+		};
+
+		for ( int i = 0; i < placements.Length; i++ )
+		{
+			var (pos, yaw) = placements[i];
+			var go = Scene.CreateObject();
+			go.Name = $"OfficePoster_{i}";
+			go.WorldPosition = pos;
+			go.WorldRotation = Rotation.FromYaw( yaw );
+			go.Tags.Add( "prop" );
+
+			// Thin backing board
+			var renderer = go.Components.Create<ModelRenderer>();
+			renderer.Model = Model.Load( "models/dev/box.vmdl" );
+			renderer.Tint = new Color( 0.92f, 0.88f, 0.80f ); // cream
+			go.LocalScale = new Vector3( 80f, 4f, 60f );
+
+			var poster = go.Components.Create<OfficePosterDisplay>();
+			poster.PosterIndex = i;
+
+			go.NetworkSpawn();
+			_spawnedProps.Add( go );
+		}
+	}
+
 	/// <summary>
-	/// Physics chaos! Apply random impulse to all props. 
+	/// Physics chaos! Apply random impulse to all props.
 	/// Called during market crashes for comedy.
 	/// </summary>
 	public void TriggerPhysicsChaos( float intensity = 1f )
