@@ -285,6 +285,8 @@ public sealed class SECSystem : Component
 
 		var feed = Scene.GetAllComponents<UI.NotificationFeed>().FirstOrDefault();
 		feed?.PushNotification( escaped ? "ESCAPED" : "BUSTED", message, escaped ? "positive" : "negative" );
+
+		ClipRecorder.Instance?.OnRaidResolved( message, escaped );
 	}
 
 	private GoblinPlayer FindPlayer( Connection conn )

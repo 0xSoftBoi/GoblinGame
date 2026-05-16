@@ -335,6 +335,8 @@ public sealed class SocialDeduction : Component
 
 		var feed = Scene.GetAllComponents<UI.NotificationFeed>().FirstOrDefault();
 		feed?.PushNotification( "GRAND RUG", $"{ruggerName} PULLED THE ULTIMATE RUG!", "negative" );
+
+		ClipRecorder.Instance?.OnGrandRug( ruggerName, amount );
 	}
 
 	[Rpc.Broadcast]
@@ -354,6 +356,8 @@ public sealed class SocialDeduction : Component
 		var feed = Scene.GetAllComponents<UI.NotificationFeed>().FirstOrDefault();
 		feed?.PushNotification( correct ? "EXPOSED" : "INNOCENT",
 			$"{suspectName}: {message}", correct ? "positive" : "negative" );
+
+		ClipRecorder.Instance?.OnAuditResult( correct, suspectName, message );
 	}
 
 	// ═══════════════════════════════════════

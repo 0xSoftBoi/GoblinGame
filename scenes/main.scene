@@ -107,6 +107,14 @@
 					"Enabled": true
 				},
 				{
+					"__type": "GoblinChain.ClipRecorder",
+					"__version": 0,
+					"Enabled": true,
+					"OverlayDuration": 4.0,
+					"EventBufferSeconds": 20,
+					"MaxBufferedEvents": 60
+				},
+				{
 					"__type": "GoblinChain.TwitchIntegration",
 					"__version": 0,
 					"Enabled": true,

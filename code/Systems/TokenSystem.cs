@@ -494,6 +494,8 @@ public sealed class TokenSystem : Component
 
 		var feed = Scene.GetAllComponents<UI.NotificationFeed>().FirstOrDefault();
 		feed?.PushNotification( "RUG PULLED", $"{creator} rugged ${ticker} for {amount:N0} GBC!", "negative" );
+
+		ClipRecorder.Instance?.OnRugPull( creator, ticker, amount );
 	}
 
 	[Rpc.Broadcast]
