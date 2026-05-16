@@ -1,0 +1,141 @@
+@using Sandbox;
+@using Sandbox.UI;
+
+@namespace GoblinChain.UI
+@inherits PanelComponent
+
+<root class="clip-root @(IsVisible ? "show" : "hide")">
+	<div class="clip-box">
+		<div class="clip-header">
+			<div class="clip-rec-dot"></div>
+			<span class="clip-rec-text">REC</span>
+			<span class="clip-label">@Label</span>
+		</div>
+		<div class="clip-desc">@Description</div>
+		<div class="clip-saved-line">
+			<span class="clip-camera">&#x1F4F9;</span>
+			<span class="clip-saved-text">CLIP SAVED</span>
+		</div>
+	</div>
+</root>
+
+<style>
+.clip-root {
+	position: absolute;
+	right: 24px;
+	bottom: 80px;
+	pointer-events: none;
+	transition: opacity 0.3s, transform 0.3s;
+}
+.clip-root.hide {
+	opacity: 0;
+	transform: translateX(24px);
+}
+.clip-root.show {
+	opacity: 1;
+	transform: translateX(0);
+}
+
+.clip-box {
+	background: rgba(0, 0, 0, 0.92);
+	border: 1px solid #00ff88;
+	border-radius: 3px;
+	padding: 10px 16px 10px 14px;
+	min-width: 260px;
+	max-width: 380px;
+	font-family: 'Consolas', monospace;
+	box-shadow: 0 0 16px rgba(0, 255, 136, 0.2);
+}
+
+.clip-header {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 6px;
+}
+
+.clip-rec-dot {
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background: #ff3333;
+	animation: blink 0.8s step-start infinite;
+	flex-shrink: 0;
+}
+
+@keyframes blink {
+	0%, 100% { opacity: 1; }
+	50%       { opacity: 0; }
+}
+
+.clip-rec-text {
+	font-size: 10px;
+	font-weight: bold;
+	color: #ff3333;
+	letter-spacing: 2px;
+}
+
+.clip-label {
+	font-size: 13px;
+	font-weight: bold;
+	color: #00ff88;
+	letter-spacing: 1px;
+	flex: 1;
+	text-align: right;
+}
+
+.clip-desc {
+	font-size: 11px;
+	color: #999;
+	margin-bottom: 8px;
+	line-height: 1.4;
+}
+
+.clip-saved-line {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	border-top: 1px solid #1a1a1a;
+	padding-top: 6px;
+}
+
+.clip-camera {
+	font-size: 13px;
+}
+
+.clip-saved-text {
+	font-size: 10px;
+	font-weight: bold;
+	color: #00ff88;
+	letter-spacing: 3px;
+}
+</style>
+
+@code
+{
+	public bool IsVisible { get; set; } = false;
+	public string Label { get; set; } = "";
+	public string Description { get; set; } = "";
+
+	private bool _lastVisible = false;
+
+	protected override void OnUpdate()
+	{
+		var recorder = ClipRecorder.Instance;
+		if ( recorder is null ) return;
+
+		bool visible = recorder.OverlayVisible;
+
+		if ( visible != _lastVisible )
+		{
+			_lastVisible = visible;
+			IsVisible = visible;
+
+			if ( visible )
+			{
+				Label = recorder.ClipLabel;
+				Description = recorder.ClipDescription;
+			}
+		}
+	}
+}

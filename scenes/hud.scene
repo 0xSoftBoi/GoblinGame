@@ -218,6 +218,24 @@
 						}
 					],
 					"Children": []
+				},
+				{
+					"__guid": "c5f1e7a4-0b6d-4c5f-2e9a-4d6f8b0c2e5a",
+					"__version": 0,
+					"Enabled": true,
+					"Name": "ClipOverlay",
+					"Position": "0,0,0",
+					"Rotation": "0,0,0,1",
+					"Scale": "1,1,1",
+					"Tags": "",
+					"Components": [
+						{
+							"__type": "GoblinChain.UI.ClipOverlay",
+							"__version": 0,
+							"Enabled": true
+						}
+					],
+					"Children": []
 				}
 			]
 		}
