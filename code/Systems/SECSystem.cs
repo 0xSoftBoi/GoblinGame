@@ -131,6 +131,13 @@ public sealed class SECSystem : Component
 		ResolveRaid( player.Id, action, blameTargetId );
 	}
 
+	// Called by TwitchIntegration when chat vote overrides raid outcome
+	public void ForceRaidAction( RaidAction action )
+	{
+		if ( IsProxy || !RaidActive || RaidResolved ) return;
+		ResolveRaid( RaidTargetId, action, Guid.Empty );
+	}
+
 	private void ResolveRaid( Guid targetId, RaidAction action, Guid blameTargetId )
 	{
 		RaidResolved = true;

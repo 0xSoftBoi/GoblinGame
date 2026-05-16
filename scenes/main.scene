@@ -107,6 +107,19 @@
 					"Enabled": true
 				},
 				{
+					"__type": "GoblinChain.TwitchIntegration",
+					"__version": 0,
+					"Enabled": true,
+					"TwitchChannel": "",
+					"OAuthToken": "",
+					"AutoConnect": false,
+					"ShillCooldown": 30.0,
+					"TradeCooldown": 10.0,
+					"ChatBuyPressure": 5.0,
+					"ChatShillPower": 0.25,
+					"RaidVoteOpenAt": 8.0
+				},
+				{
 					"__type": "GoblinChain.OfficeSetup",
 					"__version": 0,
 					"Enabled": true,
