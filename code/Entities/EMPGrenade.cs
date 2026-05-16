@@ -150,22 +150,54 @@ public sealed class EMPGrenade : Component, Component.ICollisionListener
 	[Rpc.Broadcast]
 	private void BroadcastDetonation( Vector3 position, int rigsDisabled, string thrower )
 	{
-		// Sound
 		Sound.Play( "sounds/emp_blast.sound", position );
 
-		// Log
 		if ( rigsDisabled > 0 )
 			Log.Info( $"EMP by {thrower}: {rigsDisabled} rig(s) disabled!" );
 		else
 			Log.Info( $"EMP by {thrower}: no rigs in range (wasted!)" );
 
-		// TODO: Particle effect at position
-		// TODO: Screen shake for nearby players
+		// Screen shake — intensity falls off with distance
+		var localPlayer = GoblinPlayer.All.FirstOrDefault( p => !p.IsProxy );
+		if ( localPlayer is not null )
+		{
+			float dist = Vector3.DistanceBetween( localPlayer.WorldPosition, position );
+			if ( dist <= BlastRadius )
+			{
+				float intensity = 1f - (dist / BlastRadius);
+				CameraShake.Trigger( intensity, 0.6f );
+			}
+		}
 	}
 
 	private async Task DestroyAfterDelay()
 	{
 		await GameTask.DelaySeconds( 0.3f );
 		GameObject.Destroy();
+	}
+}
+
+/// <summary>
+/// Thread-local camera shake state. Any system can call Trigger(); GoblinPlayer applies it.
+/// </summary>
+public static class CameraShake
+{
+	public static float Intensity { get; private set; } = 0f;
+
+	private static float _duration;
+	private static float _elapsed;
+
+	public static void Trigger( float intensity, float duration )
+	{
+		Intensity = MathF.Max( Intensity, intensity );
+		_duration = duration;
+		_elapsed = 0f;
+	}
+
+	public static void Tick( float delta )
+	{
+		if ( _elapsed >= _duration ) { Intensity = 0f; return; }
+		_elapsed += delta;
+		Intensity *= MathF.Pow( 0.02f, delta ); // exponential decay
 	}
 }

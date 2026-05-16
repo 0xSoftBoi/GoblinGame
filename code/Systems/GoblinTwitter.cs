@@ -164,6 +164,10 @@ public sealed class GoblinTwitter : Component
 		// Price impact
 		var tokenSys = TokenSystem.Instance;
 		tokenSys?.AddShillPressure( post.TokenId, LikePriceImpact * post.ShillPower );
+
+		// At 3 likes the post is trending — fire NPC hype replies
+		if ( post.Likes == 3 && post.TokenTicker?.Length > 0 )
+			NPCInvestors.Instance?.TriggerTrendingReaction( post.TokenTicker );
 	}
 
 	[Rpc.Host]

@@ -1,6 +1,8 @@
 @using Sandbox;
 @using Sandbox.UI;
+@using System;
 @using System.Linq;
+@using System.Collections.Generic;
 
 @namespace GoblinChain.UI
 @inherits PanelComponent
@@ -66,6 +68,24 @@
 				<span class="stat-label">RIGS DESTROYED</span>
 			</div>
 		</div>
+
+		<!-- End-Round Awards -->
+		@if ( Awards.Count > 0 )
+		{
+			<div class="awards-section">
+				@foreach ( var award in Awards )
+				{
+					<div class="award-card">
+						<span class="award-icon">@award.Icon</span>
+						<div class="award-body">
+							<div class="award-title">@award.Title</div>
+							<div class="award-player">@award.PlayerName</div>
+							<div class="award-desc">@award.Description</div>
+						</div>
+					</div>
+				}
+			</div>
+		}
 
 		<!-- Play Again -->
 		<div class="results-footer">
@@ -177,6 +197,31 @@
 .stat-value { font-size: 18px; color: #00ff88; font-weight: bold; display: block; }
 .stat-label { font-size: 9px; color: #444; letter-spacing: 2px; }
 
+/* Awards */
+.awards-section {
+	padding: 10px 20px;
+	border-top: 1px solid #222;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+.award-card {
+	display: flex;
+	align-items: flex-start;
+	gap: 8px;
+	background: rgba(255, 204, 0, 0.04);
+	border: 1px solid rgba(255, 204, 0, 0.15);
+	border-radius: 6px;
+	padding: 8px 10px;
+	flex: 1;
+	min-width: 220px;
+}
+.award-icon { font-size: 18px; flex-shrink: 0; }
+.award-body { display: flex; flex-direction: column; gap: 1px; }
+.award-title { font-size: 8px; color: #555; letter-spacing: 2px; }
+.award-player { font-size: 13px; font-weight: bold; color: #ffcc00; }
+.award-desc { font-size: 10px; color: #555; }
+
 /* Footer */
 .results-footer {
 	padding: 12px 20px;
@@ -189,6 +234,7 @@
 @code
 {
 	public record PlayerResult( string Name, float Balance, int TotalMined, int Rigs, bool IsLocal );
+	public record AwardData( string Icon, string Title, string PlayerName, string Description );
 
 	public bool IsVisible { get; set; } = false;
 	public int MaxRounds { get; set; } = 5;
@@ -198,6 +244,7 @@
 	public int TotalRigsDestroyed { get; set; }
 	public string WinnerTitle { get; set; } = "THE ULTIMATE GOBLIN";
 	public List<PlayerResult> Players { get; set; } = new();
+	public List<AwardData> Awards { get; set; } = new();
 
 	protected override void OnUpdate()
 	{
@@ -234,6 +281,88 @@
 			var market = Scene.GetAllComponents<CryptoMarket>().FirstOrDefault();
 			bool survivedCrash = market is not null && market.IsCrashing;
 			WinnerTitle = GameLore.GetWinnerTitle( Players[0].Balance, runnerUp, Players[0].Rigs, survivedCrash );
+		}
+
+		BuildAwards();
+	}
+
+	private void BuildAwards()
+	{
+		Awards.Clear();
+		var allPlayers = GoblinPlayer.All;
+		if ( allPlayers.Count == 0 ) return;
+
+		// Best Shiller — most posts on GoblinTwitter
+		var twitter = GoblinTwitter.Instance;
+		if ( twitter is not null )
+		{
+			var postCounts = new System.Collections.Generic.Dictionary<Guid, (string Name, int Count)>();
+			foreach ( var post in twitter.Feed )
+			{
+				if ( post.IsNPC || post.AuthorId == Guid.Empty ) continue;
+				if ( !postCounts.ContainsKey( post.AuthorId ) )
+					postCounts[post.AuthorId] = (post.AuthorName, 0);
+				postCounts[post.AuthorId] = (post.AuthorName, postCounts[post.AuthorId].Count + 1);
+			}
+			if ( postCounts.Count > 0 )
+			{
+				var top = postCounts.OrderByDescending( kv => kv.Value.Count ).First();
+				Awards.Add( new AwardData( "📣", "BEST SHILLER",
+					top.Value.Name, $"{top.Value.Count} posts, zero shame" ) );
+			}
+		}
+
+		// SEC Magnet — most raids taken
+		GoblinPlayer secMagnet = null;
+		int mostRaids = 0;
+		foreach ( var p in allPlayers )
+		{
+			var heat = p.Components.Get<SECHeatComponent>();
+			if ( heat is not null && heat.TimesRaided > mostRaids )
+			{
+				mostRaids = heat.TimesRaided;
+				secMagnet = p;
+			}
+		}
+		if ( secMagnet is not null && mostRaids > 0 )
+			Awards.Add( new AwardData( "🚨", "SEC MAGNET",
+				secMagnet.Network.Owner?.DisplayName ?? "???",
+				$"Raided {mostRaids}x. The SEC keeps a photo." ) );
+
+		// Rig Lord — most rigs placed
+		if ( Players.Count > 0 )
+		{
+			var rigLord = Players.OrderByDescending( p => p.Rigs ).First();
+			if ( rigLord.Rigs > 0 )
+				Awards.Add( new AwardData( "⚡", "RIG LORD",
+					rigLord.Name, $"{rigLord.Rigs} rigs humming" ) );
+		}
+
+		// Biggest Bag — highest total portfolio value
+		if ( Players.Count > 0 )
+		{
+			var bigBag = Players.OrderByDescending( p => p.Balance ).First();
+			Awards.Add( new AwardData( "💰", "BIGGEST BAG",
+				bigBag.Name, $"{bigBag.Balance:N0} GBC net worth" ) );
+		}
+
+		// Honest Goblin — no reports on their posts
+		if ( twitter is not null )
+		{
+			var reportedIds = new System.Collections.Generic.HashSet<Guid>();
+			foreach ( var post in twitter.Feed )
+				if ( post.Reports > 0 && !post.IsNPC ) reportedIds.Add( post.AuthorId );
+
+			foreach ( var p in allPlayers )
+			{
+				if ( !reportedIds.Contains( p.Id ) )
+				{
+					Awards.Add( new AwardData( "😇", "HONEST GOBLIN",
+						p.Network.Owner?.DisplayName ?? "???",
+						"Never reported. Suspicious, honestly." ) );
+					break; // just the first one
+				}
+			}
 		}
 	}
 }

@@ -30,9 +30,14 @@ public sealed class TradingSystem : Component
 		public Guid ReceiverObjectId;
 		public string SenderName;
 		public string ReceiverName;
+		// GBC component (either side may be 0)
 		public float OfferedCoins;
 		public float RequestedCoins;
-		public string OfferedItem;
+		// Token component (Guid.Empty = no token on that side)
+		public Guid OfferedTokenId;
+		public float OfferedTokenAmount;
+		public Guid RequestedTokenId;
+		public float RequestedTokenAmount;
 		public bool SenderAccepted;
 		public bool ReceiverAccepted;
 		public float CreatedAt;
@@ -46,7 +51,10 @@ public sealed class TradingSystem : Component
 			ReceiverName = read.Read<string>();
 			OfferedCoins = read.Read<float>();
 			RequestedCoins = read.Read<float>();
-			OfferedItem = read.Read<string>();
+			OfferedTokenId = read.Read<Guid>();
+			OfferedTokenAmount = read.Read<float>();
+			RequestedTokenId = read.Read<Guid>();
+			RequestedTokenAmount = read.Read<float>();
 			SenderAccepted = read.Read<bool>();
 			ReceiverAccepted = read.Read<bool>();
 			CreatedAt = read.Read<float>();
@@ -61,7 +69,10 @@ public sealed class TradingSystem : Component
 			write.Write( ReceiverName );
 			write.Write( OfferedCoins );
 			write.Write( RequestedCoins );
-			write.Write( OfferedItem );
+			write.Write( OfferedTokenId );
+			write.Write( OfferedTokenAmount );
+			write.Write( RequestedTokenId );
+			write.Write( RequestedTokenAmount );
 			write.Write( SenderAccepted );
 			write.Write( ReceiverAccepted );
 			write.Write( CreatedAt );
@@ -73,12 +84,13 @@ public sealed class TradingSystem : Component
 	// ═══════════════════════════════════════
 
 	[Rpc.Host]
-	public void RequestTrade( Guid targetPlayerId, float offerCoins,
-		float requestCoins, string offerItem )
+	public void RequestTrade( Guid targetPlayerId,
+		float offerCoins, float requestCoins,
+		Guid offerTokenId, float offerTokenAmount,
+		Guid requestTokenId, float requestTokenAmount )
 	{
 		var caller = Rpc.Caller;
 
-		// Phase check
 		var state = GameStateManager.Instance;
 		if ( state is not null && !state.CanTrade )
 		{
@@ -86,41 +98,37 @@ public sealed class TradingSystem : Component
 			return;
 		}
 
-		// Find sender
 		var sender = FindPlayerByConnection( caller );
 		if ( sender is null ) return;
 
-		// Find receiver by component ID
-		var receiver = GoblinPlayer.All
-			.FirstOrDefault( p => p.Id == targetPlayerId );
-		if ( receiver is null )
-		{
-			Log.Warning( "Trade target not found" );
-			return;
-		}
+		var receiver = GoblinPlayer.All.FirstOrDefault( p => p.Id == targetPlayerId );
+		if ( receiver is null ) { Log.Warning( "Trade target not found" ); return; }
 
-		// Validate sender funds
 		var senderWallet = sender.Components.Get<CryptoWallet>();
-		if ( senderWallet is null || senderWallet.GoblinCoin < offerCoins )
+		if ( senderWallet is null ) return;
+
+		// Validate GBC
+		if ( senderWallet.GoblinCoin < offerCoins )
 		{
 			Log.Warning( $"{caller.DisplayName} can't afford to offer {offerCoins} GBC" );
 			return;
 		}
 
-		// Limit active trades per player (prevent spam)
-		int activeSenderTrades = 0;
-		foreach ( var kv in ActiveTrades )
+		// Validate offered token holdings
+		if ( offerTokenId != Guid.Empty && offerTokenAmount > 0f )
 		{
-			if ( kv.Value.SenderObjectId == sender.Id )
-				activeSenderTrades++;
-		}
-		if ( activeSenderTrades >= 3 )
-		{
-			Log.Warning( "Too many active trades" );
-			return;
+			if ( senderWallet.GetTokenHolding( offerTokenId ) < offerTokenAmount )
+			{
+				Log.Warning( $"{caller.DisplayName} doesn't have enough tokens to offer" );
+				return;
+			}
 		}
 
-		// Create trade
+		int activeSenderTrades = 0;
+		foreach ( var kv in ActiveTrades )
+			if ( kv.Value.SenderObjectId == sender.Id ) activeSenderTrades++;
+		if ( activeSenderTrades >= 3 ) { Log.Warning( "Too many active trades" ); return; }
+
 		var trade = new TradeData
 		{
 			TradeId = Guid.NewGuid(),
@@ -130,18 +138,18 @@ public sealed class TradingSystem : Component
 			ReceiverName = receiver.Network.Owner?.DisplayName ?? "???",
 			OfferedCoins = offerCoins,
 			RequestedCoins = requestCoins,
-			OfferedItem = offerItem ?? "",
+			OfferedTokenId = offerTokenId,
+			OfferedTokenAmount = offerTokenAmount,
+			RequestedTokenId = requestTokenId,
+			RequestedTokenAmount = requestTokenAmount,
 			SenderAccepted = true,
 			ReceiverAccepted = false,
 			CreatedAt = Time.Now
 		};
 
 		ActiveTrades[trade.TradeId] = trade;
-
-		BroadcastTradeProposed( trade.TradeId, trade.SenderName,
-			trade.ReceiverName, offerCoins, requestCoins );
-
-		Log.Info( $"Trade proposed: {trade.SenderName} offers {offerCoins} GBC, wants {requestCoins} GBC from {trade.ReceiverName}" );
+		BroadcastTradeProposed( trade.TradeId, trade.SenderName, trade.ReceiverName, offerCoins, requestCoins );
+		Log.Info( $"Trade proposed: {trade.SenderName} → {trade.ReceiverName} | {offerCoins} GBC + {offerTokenAmount} tokens ↔ {requestCoins} GBC + {requestTokenAmount} tokens" );
 	}
 
 	// ═══════════════════════════════════════
@@ -214,19 +222,36 @@ public sealed class TradingSystem : Component
 		}
 
 		// Final validation — balances may have changed since proposal
-		if ( sw.GoblinCoin < trade.OfferedCoins ||
-			 rw.GoblinCoin < trade.RequestedCoins )
+		bool insufficientGBC = sw.GoblinCoin < trade.OfferedCoins || rw.GoblinCoin < trade.RequestedCoins;
+		bool insufficientSenderToken = trade.OfferedTokenId != Guid.Empty
+			&& sw.GetTokenHolding( trade.OfferedTokenId ) < trade.OfferedTokenAmount;
+		bool insufficientReceiverToken = trade.RequestedTokenId != Guid.Empty
+			&& rw.GetTokenHolding( trade.RequestedTokenId ) < trade.RequestedTokenAmount;
+
+		if ( insufficientGBC || insufficientSenderToken || insufficientReceiverToken )
 		{
 			ActiveTrades.Remove( trade.TradeId );
 			BroadcastTradeFailed( trade.TradeId, "Insufficient funds" );
 			return;
 		}
 
-		// Execute swap
+		// Swap GBC
 		sw.GoblinCoin -= trade.OfferedCoins;
 		sw.GoblinCoin += trade.RequestedCoins;
 		rw.GoblinCoin -= trade.RequestedCoins;
 		rw.GoblinCoin += trade.OfferedCoins;
+
+		// Swap tokens if applicable
+		if ( trade.OfferedTokenId != Guid.Empty && trade.OfferedTokenAmount > 0f )
+		{
+			sw.RemoveTokenHolding( trade.OfferedTokenId, trade.OfferedTokenAmount );
+			rw.AddTokenHolding( trade.OfferedTokenId, trade.OfferedTokenAmount );
+		}
+		if ( trade.RequestedTokenId != Guid.Empty && trade.RequestedTokenAmount > 0f )
+		{
+			rw.RemoveTokenHolding( trade.RequestedTokenId, trade.RequestedTokenAmount );
+			sw.AddTokenHolding( trade.RequestedTokenId, trade.RequestedTokenAmount );
+		}
 
 		ActiveTrades.Remove( trade.TradeId );
 

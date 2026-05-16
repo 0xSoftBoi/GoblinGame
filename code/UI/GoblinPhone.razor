@@ -22,6 +22,7 @@
 				<div class="tab @(CurrentTab == "feed" ? "active" : "")" onclick="@(() => CurrentTab = "feed")">FEED</div>
 				<div class="tab @(CurrentTab == "trending" ? "active" : "")" onclick="@(() => CurrentTab = "trending")">TRENDING</div>
 				<div class="tab @(CurrentTab == "compose" ? "active" : "")" onclick="@(() => CurrentTab = "compose")">POST</div>
+				<div class="tab @(CurrentTab == "portfolio" ? "active" : "")" onclick="@(() => CurrentTab = "portfolio")">BAGS</div>
 			</div>
 
 			<!-- Content area -->
@@ -38,6 +39,10 @@
 				else if ( CurrentTab == "compose" )
 				{
 					@RenderComposer()
+				}
+				else if ( CurrentTab == "portfolio" )
+				{
+					@RenderPortfolio()
 				}
 
 			</div>
@@ -257,6 +262,62 @@
 	private TextEntry CustomTextEntry;
 
 	// ═══════════════════════════════════════
+	//  PORTFOLIO TAB
+	// ═══════════════════════════════════════
+
+	private RenderFragment RenderPortfolio()
+	{
+		var localPlayer = GoblinPlayer.All.FirstOrDefault( p => !p.IsProxy );
+		var wallet = localPlayer?.Components.Get<CryptoWallet>();
+		var tokenSys = TokenSystem.Instance;
+
+		if ( wallet is null || tokenSys is null )
+			return @<div class="empty-feed">No wallet data</div>;
+
+		float totalTokenValue = 0f;
+		foreach ( var kv in wallet.TokenHoldings )
+		{
+			var tok = tokenSys.GetToken( kv.Key );
+			if ( tok is not null ) totalTokenValue += kv.Value * tok.Value.Price;
+		}
+		float totalValue = wallet.GoblinCoin + totalTokenValue;
+
+		return @<div class="portfolio">
+			<div class="port-header">YOUR BAGS</div>
+
+			<div class="port-summary">
+				<div class="port-total">@totalValue.ToString("N1") <span class="port-unit">GBC total</span></div>
+			</div>
+
+			<div class="port-row port-gbc">
+				<span class="port-symbol">GBC</span>
+				<span class="port-name">GoblinCoin</span>
+				<span class="port-val">@wallet.GoblinCoin.ToString("N1")</span>
+			</div>
+
+			@if ( wallet.TokenHoldings.Count == 0 )
+			{
+				<div class="empty-feed" style="padding: 20px;">No token holdings yet</div>
+			}
+			@foreach ( var kv in wallet.TokenHoldings )
+			{
+				var tok = tokenSys.GetToken( kv.Key );
+				if ( tok is null ) continue;
+				var t = tok.Value;
+				float val = kv.Value * t.Price;
+				string pct = totalValue > 0f ? $"{(val / totalValue * 100f):F0}%" : "0%";
+				bool up = t.Price >= t.PreviousPrice;
+				<div class="port-row">
+					<span class="port-symbol">$@t.Ticker</span>
+					<span class="port-name">@kv.Value.ToString("N0") units</span>
+					<span class="port-val @(up ? "green" : "red")">@val.ToString("N1")</span>
+					<span class="port-pct">@pct</span>
+				</div>
+			}
+		</div>;
+	}
+
+	// ═══════════════════════════════════════
 	//  ACTIONS
 	// ═══════════════════════════════════════
 
@@ -420,4 +481,22 @@
 	}
 	.post-button:hover { background-color: rgba(0, 255, 65, 0.4); }
 	.post-button.disabled { opacity: 0.3; pointer-events: none; }
+
+	/* Portfolio */
+	.port-header { font-weight: bold; text-align: center; padding: 8px; font-size: 14px; }
+	.port-summary { text-align: center; margin-bottom: 10px; }
+	.port-total { font-size: 20px; font-weight: bold; color: #00ff41; }
+	.port-unit { font-size: 11px; opacity: 0.6; }
+	.port-row {
+		display: flex; align-items: center; gap: 6px;
+		padding: 6px 4px; border-bottom: 1px solid rgba(0,255,65,0.1);
+		font-size: 12px;
+	}
+	.port-row.port-gbc { color: #ffcc00; }
+	.port-symbol { font-weight: bold; min-width: 48px; }
+	.port-name { flex: 1; opacity: 0.6; font-size: 10px; }
+	.port-val { font-weight: bold; }
+	.port-val.green { color: #00ff88; }
+	.port-val.red { color: #ff4444; }
+	.port-pct { font-size: 10px; opacity: 0.5; min-width: 32px; text-align: right; }
 </style>

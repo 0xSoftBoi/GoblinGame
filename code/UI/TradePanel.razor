@@ -49,6 +49,34 @@
 					<button class="tp-btn-sm" onclick="@(() => AdjustOffer(10))">+10</button>
 					<button class="tp-btn-sm" onclick="@(() => AdjustOffer(50))">+50</button>
 				</div>
+				@{ var myTokens = GetMyTokenHoldings(); }
+				@if ( myTokens.Count > 0 )
+				{
+					<div class="tp-token-row">
+						<span class="tp-input-label">TOKEN</span>
+						<div class="tp-token-picker">
+							<div class="tp-tok-opt @(OfferTokenId == Guid.Empty ? "selected" : "")"
+								onclick="@(() => { OfferTokenId = Guid.Empty; OfferTokenAmount = 0; })">none</div>
+							@foreach ( var t in myTokens )
+							{
+								var tid = t.TokenId;
+								<div class="tp-tok-opt @(OfferTokenId == tid ? "selected" : "")"
+									onclick="@(() => { OfferTokenId = tid; OfferTokenAmount = 0; })">
+									$@t.Ticker
+								</div>
+							}
+						</div>
+					</div>
+					@if ( OfferTokenId != Guid.Empty )
+					{
+						<div class="tp-input-row">
+							<span class="tp-input-label">AMT</span>
+							<button class="tp-btn-sm" onclick="@(() => AdjustOfferToken(-10))">-10</button>
+							<span class="tp-input-value">@OfferTokenAmount.ToString("N0")</span>
+							<button class="tp-btn-sm" onclick="@(() => AdjustOfferToken(10))">+10</button>
+						</div>
+					}
+				}
 			</div>
 
 			<!-- You request -->
@@ -61,6 +89,34 @@
 					<button class="tp-btn-sm" onclick="@(() => AdjustRequest(10))">+10</button>
 					<button class="tp-btn-sm" onclick="@(() => AdjustRequest(50))">+50</button>
 				</div>
+				@{ var allTokens = GetAllActiveTokens(); }
+				@if ( allTokens.Count > 0 )
+				{
+					<div class="tp-token-row">
+						<span class="tp-input-label">TOKEN</span>
+						<div class="tp-token-picker">
+							<div class="tp-tok-opt @(RequestTokenId == Guid.Empty ? "selected" : "")"
+								onclick="@(() => { RequestTokenId = Guid.Empty; RequestTokenAmount = 0; })">none</div>
+							@foreach ( var t in allTokens )
+							{
+								var tid = t.TokenId;
+								<div class="tp-tok-opt @(RequestTokenId == tid ? "selected" : "")"
+									onclick="@(() => { RequestTokenId = tid; RequestTokenAmount = 0; })">
+									$@t.Ticker
+								</div>
+							}
+						</div>
+					</div>
+					@if ( RequestTokenId != Guid.Empty )
+					{
+						<div class="tp-input-row">
+							<span class="tp-input-label">AMT</span>
+							<button class="tp-btn-sm" onclick="@(() => AdjustRequestToken(-10))">-10</button>
+							<span class="tp-input-value">@RequestTokenAmount.ToString("N0")</span>
+							<button class="tp-btn-sm" onclick="@(() => AdjustRequestToken(10))">+10</button>
+						</div>
+					}
+				}
 			</div>
 
 			<!-- Buttons -->
@@ -191,6 +247,14 @@
 }
 
 .tp-input-label { color: #ffcc00; font-size: 12px; min-width: 30px; }
+.tp-token-row { display: flex; align-items: center; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
+.tp-token-picker { display: flex; flex-wrap: wrap; gap: 3px; flex: 1; }
+.tp-tok-opt {
+	padding: 2px 6px; border: 1px solid rgba(255,204,0,0.2);
+	border-radius: 3px; cursor: pointer; font-size: 10px; color: #aaa;
+}
+.tp-tok-opt:hover { background: rgba(255,204,0,0.1); }
+.tp-tok-opt.selected { background: rgba(255,204,0,0.2); border-color: #ffcc00; color: #ffcc00; }
 
 .tp-input-value {
 	color: white;
@@ -280,6 +344,7 @@
 	// === Data types ===
 	public record NearbyPlayer( Guid Id, string Name, float Distance );
 	public record IncomingOffer( Guid TradeId, string SenderName, float TheirCoins, float WantCoins );
+	public record TokenOption( Guid TokenId, string Ticker, float Held );
 
 	// === State ===
 	public bool IsVisible { get; set; } = false;
@@ -288,6 +353,10 @@
 	public string TargetName { get; set; } = "";
 	public float OfferAmount { get; set; } = 0f;
 	public float RequestAmount { get; set; } = 0f;
+	public Guid OfferTokenId { get; set; } = Guid.Empty;
+	public float OfferTokenAmount { get; set; } = 0f;
+	public Guid RequestTokenId { get; set; } = Guid.Empty;
+	public float RequestTokenAmount { get; set; } = 0f;
 	public string StatusMessage { get; set; } = "";
 	public string StatusClass { get; set; } = "info";
 	public List<NearbyPlayer> NearbyPlayers { get; set; } = new();
@@ -331,6 +400,10 @@
 		TargetName = "";
 		OfferAmount = 0;
 		RequestAmount = 0;
+		OfferTokenId = Guid.Empty;
+		OfferTokenAmount = 0;
+		RequestTokenId = Guid.Empty;
+		RequestTokenAmount = 0;
 		StatusMessage = "";
 	}
 
@@ -352,6 +425,46 @@
 		RequestAmount = System.MathF.Max( 0, RequestAmount + delta );
 	}
 
+	void AdjustOfferToken( float delta )
+	{
+		var local = GoblinPlayer.All.FirstOrDefault( p => !p.IsProxy );
+		var w = local?.Components.Get<CryptoWallet>();
+		float maxHeld = w?.GetTokenHolding( OfferTokenId ) ?? 0f;
+		OfferTokenAmount = System.MathF.Clamp( OfferTokenAmount + delta, 0, maxHeld );
+	}
+
+	void AdjustRequestToken( float delta )
+	{
+		RequestTokenAmount = System.MathF.Max( 0, RequestTokenAmount + delta );
+	}
+
+	List<TokenOption> GetMyTokenHoldings()
+	{
+		var local = GoblinPlayer.All.FirstOrDefault( p => !p.IsProxy );
+		var w = local?.Components.Get<CryptoWallet>();
+		var ts = TokenSystem.Instance;
+		if ( w is null || ts is null ) return new();
+
+		var result = new List<TokenOption>();
+		foreach ( var kv in w.TokenHoldings )
+		{
+			if ( kv.Value <= 0 ) continue;
+			var tok = ts.GetToken( kv.Key );
+			if ( tok is null || tok.Value.IsRugged ) continue;
+			result.Add( new TokenOption( kv.Key, tok.Value.Ticker, kv.Value ) );
+		}
+		return result;
+	}
+
+	List<TokenOption> GetAllActiveTokens()
+	{
+		var ts = TokenSystem.Instance;
+		if ( ts is null ) return new();
+		return ts.GetActiveTokensSorted()
+			.Select( t => new TokenOption( t.Id, t.Ticker, 0 ) )
+			.ToList();
+	}
+
 	// === Actions ===
 
 	void SendOffer()
@@ -369,10 +482,15 @@
 			return;
 		}
 
-		trading.RequestTrade( TargetId, OfferAmount, RequestAmount, "" );
+		trading.RequestTrade( TargetId, OfferAmount, RequestAmount,
+			OfferTokenId, OfferTokenAmount, RequestTokenId, RequestTokenAmount );
 		ShowStatus( "Offer sent!", "success" );
 		OfferAmount = 0;
 		RequestAmount = 0;
+		OfferTokenId = Guid.Empty;
+		OfferTokenAmount = 0;
+		RequestTokenId = Guid.Empty;
+		RequestTokenAmount = 0;
 	}
 
 	void AcceptOffer( Guid tradeId )

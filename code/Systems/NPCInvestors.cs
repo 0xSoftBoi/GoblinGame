@@ -208,6 +208,27 @@ public sealed class NPCInvestors : Component
 	}
 
 	/// <summary>
+	/// Fires 2-3 NPC hype replies when a post hits the trending threshold (3 likes).
+	/// </summary>
+	public void TriggerTrendingReaction( string ticker )
+	{
+		var twitter = Scene.GetAllComponents<GoblinTwitter>().FirstOrDefault();
+		if ( twitter is null || _bots.Count == 0 ) return;
+
+		string[] hypeReplies = {
+			$"${ticker} suddenly everywhere on my feed 👀",
+			$"just aped into ${ticker} after seeing it trend. probably fine",
+			$"${ticker} going viral rn. ngmi if you're not in already",
+			$"who is buying all this ${ticker}... and why aren't I them",
+		};
+
+		int reactorCount = 2 + _rng.Next( 2 );
+		var reactors = _bots.OrderBy( _ => _rng.Next() ).Take( reactorCount );
+		foreach ( var bot in reactors )
+			twitter.AddNPCPost( bot.Handle, ticker, hypeReplies[_rng.Next( hypeReplies.Length )] );
+	}
+
+	/// <summary>
 	/// Floods GoblinTwitter with NPC rug-pull reactions. Call after a rug pull executes.
 	/// </summary>
 	public void TriggerRugPullReactions( string ticker )

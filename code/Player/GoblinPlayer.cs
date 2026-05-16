@@ -99,6 +99,17 @@ public sealed class GoblinPlayer : Component
 		{
 			Scene.Camera.WorldPosition = Head.Transform.Position;
 			Scene.Camera.WorldRotation = Head.Transform.Rotation;
+
+			CameraShake.Tick( Time.Delta );
+			if ( CameraShake.Intensity > 0.001f )
+			{
+				float t = Time.Now * 60f;
+				Scene.Camera.WorldPosition += new Vector3(
+					MathF.Sin( t * 1.7f ),
+					MathF.Sin( t * 2.3f ),
+					MathF.Sin( t * 1.1f )
+				) * CameraShake.Intensity * 4f;
+			}
 		}
 
 		// --- State ---
