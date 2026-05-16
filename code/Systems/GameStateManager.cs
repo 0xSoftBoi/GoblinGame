@@ -203,7 +203,7 @@ public sealed class GameStateManager : Component
 		var tokenSystem = Scene.GetAllComponents<TokenSystem>().FirstOrDefault();
 		if ( tokenSystem is null ) return;
 
-		var myPlayer = Scene.GetAllComponents<GoblinPlayer>()
+		var myPlayer = GoblinPlayer.All
 			.FirstOrDefault( p => !p.IsProxy );
 		if ( myPlayer is null ) return;
 

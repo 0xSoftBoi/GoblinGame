@@ -241,7 +241,7 @@ public sealed class PlayerInput : Component
 	private void RequestThrowEMP()
 	{
 		var caller = Rpc.Caller;
-		var player = Scene.GetAllComponents<GoblinPlayer>()
+		var player = GoblinPlayer.All
 			.FirstOrDefault( p => p.Network.Owner == caller );
 		if ( player is null ) return;
 

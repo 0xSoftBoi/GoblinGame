@@ -42,7 +42,7 @@ public sealed class SECSystem : Component
 		if ( IsProxy ) return;
 
 		// Decay heat for all players
-		foreach ( var player in Scene.GetAllComponents<GoblinPlayer>() )
+		foreach ( var player in GoblinPlayer.All )
 		{
 			var heat = player.Components.Get<SECHeatComponent>();
 			if ( heat is null ) continue;
@@ -142,8 +142,7 @@ public sealed class SECSystem : Component
 	{
 		RaidResolved = true;
 
-		var target = Scene.GetAllComponents<GoblinPlayer>()
-			.FirstOrDefault( p => p.Id == targetId );
+		var target = GoblinPlayer.All.FirstOrDefault( p => p.Id == targetId );
 		if ( target is null )
 		{
 			EndRaid();
@@ -193,8 +192,7 @@ public sealed class SECSystem : Component
 				break;
 
 			case RaidAction.BlameAnother:
-				var blamed = Scene.GetAllComponents<GoblinPlayer>()
-					.FirstOrDefault( p => p.Id == blameTargetId );
+				var blamed = GoblinPlayer.All.FirstOrDefault( p => p.Id == blameTargetId );
 				if ( blamed is not null )
 				{
 					var blamedHeat = blamed.Components.Get<SECHeatComponent>();
@@ -251,8 +249,8 @@ public sealed class SECSystem : Component
 		RaidResolved = false;
 		RaidTargetId = Guid.Empty;
 
-		foreach ( var h in Scene.GetAllComponents<SECHeatComponent>() )
-			h.IsBeingRaided = false;
+		foreach ( var player in GoblinPlayer.All )
+			if ( player.Components.Get<SECHeatComponent>() is { } h ) h.IsBeingRaided = false;
 	}
 
 	// ═══════════════════════════════════════
@@ -290,8 +288,7 @@ public sealed class SECSystem : Component
 	}
 
 	private GoblinPlayer FindPlayer( Connection conn )
-		=> Scene.GetAllComponents<GoblinPlayer>()
-			.FirstOrDefault( p => p.Network.Owner == conn );
+		=> GoblinPlayer.All.FirstOrDefault( p => p.Network.Owner == conn );
 }
 
 public enum RaidAction

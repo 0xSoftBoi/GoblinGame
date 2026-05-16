@@ -469,7 +469,7 @@ public sealed class TokenSystem : Component
 	}
 
 	private GoblinPlayer FindPlayer( Connection conn )
-		=> Scene.GetAllComponents<GoblinPlayer>()
+		=> GoblinPlayer.All
 			.FirstOrDefault( p => p.Network.Owner == conn );
 
 	// ═══════════════════════════════════════

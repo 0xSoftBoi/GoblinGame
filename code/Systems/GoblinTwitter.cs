@@ -238,7 +238,7 @@ public sealed class GoblinTwitter : Component
 		// 3+ reports = SEC heat on author
 		if ( post.Reports >= ReportThreshold )
 		{
-			var author = Scene.GetAllComponents<GoblinPlayer>()
+			var author = GoblinPlayer.All
 				.FirstOrDefault( p => p.Id == post.AuthorId );
 			if ( author is not null )
 			{
@@ -335,7 +335,7 @@ public sealed class GoblinTwitter : Component
 	}
 
 	private GoblinPlayer FindPlayer( Connection conn )
-		=> Scene.GetAllComponents<GoblinPlayer>()
+		=> GoblinPlayer.All
 			.FirstOrDefault( p => p.Network.Owner == conn );
 
 	[Rpc.Broadcast]

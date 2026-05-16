@@ -65,7 +65,7 @@ public sealed class SocialDeduction : Component
 		}
 
 		// Pick a random player
-		var players = Scene.GetAllComponents<GoblinPlayer>().ToList();
+		var players = GoblinPlayer.All.ToList();
 		if ( players.Count < 2 )
 		{
 			_ruggerId = Guid.Empty;
@@ -98,7 +98,7 @@ public sealed class SocialDeduction : Component
 	/// </summary>
 	public bool AmITheRugger( Connection conn )
 	{
-		var player = Scene.GetAllComponents<GoblinPlayer>()
+		var player = GoblinPlayer.All
 			.FirstOrDefault( p => p.Network.Owner == conn );
 		return player is not null && player.Id == _ruggerId;
 	}
@@ -166,7 +166,7 @@ public sealed class SocialDeduction : Component
 			var owner = wallet.Network.Owner;
 			if ( owner is not null )
 			{
-				var p = Scene.GetAllComponents<GoblinPlayer>()
+				var p = GoblinPlayer.All
 					.FirstOrDefault( pl => pl.Network.Owner == owner );
 				if ( p is not null && p.Id != _ruggerId )
 				{
@@ -242,7 +242,7 @@ public sealed class SocialDeduction : Component
 		_auditVotes[player.Id] = suspectId;
 
 		// Check if all players have voted
-		int totalPlayers = Scene.GetAllComponents<GoblinPlayer>().Count();
+		int totalPlayers = GoblinPlayer.All.Count();
 		if ( _auditVotes.Count >= totalPlayers )
 		{
 			ResolveAudit();
@@ -284,7 +284,7 @@ public sealed class SocialDeduction : Component
 
 		// Find most-voted suspect
 		var topSuspect = voteCounts.OrderByDescending( kv => kv.Value ).First();
-		var suspectPlayer = Scene.GetAllComponents<GoblinPlayer>()
+		var suspectPlayer = GoblinPlayer.All
 			.FirstOrDefault( p => p.Id == topSuspect.Key );
 		string suspectName = suspectPlayer?.Network.Owner?.DisplayName ?? "???";
 
@@ -365,6 +365,6 @@ public sealed class SocialDeduction : Component
 	// ═══════════════════════════════════════
 
 	private GoblinPlayer FindPlayer( Connection conn )
-		=> Scene.GetAllComponents<GoblinPlayer>()
+		=> GoblinPlayer.All
 			.FirstOrDefault( p => p.Network.Owner == conn );
 }

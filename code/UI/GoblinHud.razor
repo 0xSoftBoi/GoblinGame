@@ -467,7 +467,7 @@
 
 	private void PullLocalWallet()
 	{
-		var local = Scene.GetAllComponents<GoblinPlayer>()
+		var local = GoblinPlayer.All
 			.FirstOrDefault( p => !p.IsProxy );
 		if ( local is null ) return;
 
@@ -513,7 +513,7 @@
 	private void PullInteraction()
 	{
 		// Check if player is looking at something interactable
-		var local = Scene.GetAllComponents<GoblinPlayer>()
+		var local = GoblinPlayer.All
 			.FirstOrDefault( p => !p.IsProxy );
 		if ( local is null || local.Head is null )
 		{

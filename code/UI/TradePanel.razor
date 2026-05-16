@@ -341,7 +341,7 @@
 		OfferAmount = System.MathF.Max( 0, OfferAmount + delta );
 
 		// Clamp to what player can afford
-		var local = Scene.GetAllComponents<GoblinPlayer>().FirstOrDefault( p => !p.IsProxy );
+		var local = GoblinPlayer.All.FirstOrDefault( p => !p.IsProxy );
 		var w = local?.Components.Get<CryptoWallet>();
 		if ( w is not null )
 			OfferAmount = System.MathF.Min( OfferAmount, w.GoblinCoin );
@@ -409,10 +409,10 @@
 		}
 
 		// Scan for nearby players
-		var local = Scene.GetAllComponents<GoblinPlayer>().FirstOrDefault( p => !p.IsProxy );
+		var local = GoblinPlayer.All.FirstOrDefault( p => !p.IsProxy );
 		if ( local is not null )
 		{
-			NearbyPlayers = Scene.GetAllComponents<GoblinPlayer>()
+			NearbyPlayers = GoblinPlayer.All
 				.Where( p => p.IsProxy ) // Other players only
 				.Select( p => new NearbyPlayer(
 					p.Id,

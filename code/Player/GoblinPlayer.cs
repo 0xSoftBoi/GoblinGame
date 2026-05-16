@@ -1,4 +1,5 @@
 using Sandbox;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace GoblinChain;
@@ -11,6 +12,7 @@ namespace GoblinChain;
 /// </summary>
 public sealed class GoblinPlayer : Component
 {
+	public static List<GoblinPlayer> All { get; } = new();
 	// --- Movement Config ---
 	[Property] public float Speed { get; set; } = 160f;
 	[Property] public float RunSpeed { get; set; } = 290f;
@@ -43,6 +45,8 @@ public sealed class GoblinPlayer : Component
 
 	protected override void OnStart()
 	{
+		All.Add( this );
+
 		if ( !IsProxy )
 		{
 			// First-person: hide body, show shadow only
@@ -57,6 +61,11 @@ public sealed class GoblinPlayer : Component
 				Scene.Camera.WorldRotation = Head.Transform.Rotation;
 			}
 		}
+	}
+
+	protected override void OnDestroy()
+	{
+		All.Remove( this );
 	}
 
 	// =========================================================

@@ -33,7 +33,7 @@ public sealed class NetworkedRigSpawner : Component
 		var caller = Rpc.Caller;
 
 		// 1. Find caller's player
-		var player = Scene.GetAllComponents<GoblinPlayer>()
+		var player = GoblinPlayer.All
 			.FirstOrDefault( p => p.Network.Owner == caller );
 		if ( player is null ) return;
 

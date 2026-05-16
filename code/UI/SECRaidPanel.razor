@@ -93,7 +93,7 @@
 		var sec = SECSystem.Instance;
 		if ( sec is null ) return false;
 
-		var localPlayer = Scene.GetAllComponents<GoblinPlayer>()
+		var localPlayer = GoblinPlayer.All
 			.FirstOrDefault( p => !p.IsProxy );
 		return localPlayer is not null && localPlayer.Id == sec.RaidTargetId;
 	}
@@ -111,9 +111,9 @@
 
 	private System.Collections.Generic.List<GoblinPlayer> GetOtherPlayers()
 	{
-		var localPlayer = Scene.GetAllComponents<GoblinPlayer>()
+		var localPlayer = GoblinPlayer.All
 			.FirstOrDefault( p => !p.IsProxy );
-		return Scene.GetAllComponents<GoblinPlayer>()
+		return GoblinPlayer.All
 			.Where( p => p != localPlayer )
 			.ToList();
 	}

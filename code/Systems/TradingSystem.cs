@@ -91,7 +91,7 @@ public sealed class TradingSystem : Component
 		if ( sender is null ) return;
 
 		// Find receiver by component ID
-		var receiver = Scene.GetAllComponents<GoblinPlayer>()
+		var receiver = GoblinPlayer.All
 			.FirstOrDefault( p => p.Id == targetPlayerId );
 		if ( receiver is null )
 		{
@@ -193,9 +193,9 @@ public sealed class TradingSystem : Component
 
 	private void ExecuteTrade( TradeData trade )
 	{
-		var sender = Scene.GetAllComponents<GoblinPlayer>()
+		var sender = GoblinPlayer.All
 			.FirstOrDefault( p => p.Id == trade.SenderObjectId );
-		var receiver = Scene.GetAllComponents<GoblinPlayer>()
+		var receiver = GoblinPlayer.All
 			.FirstOrDefault( p => p.Id == trade.ReceiverObjectId );
 
 		if ( sender is null || receiver is null )
@@ -294,7 +294,7 @@ public sealed class TradingSystem : Component
 
 	private GoblinPlayer FindPlayerByConnection( Connection conn )
 	{
-		return Scene.GetAllComponents<GoblinPlayer>()
+		return GoblinPlayer.All
 			.FirstOrDefault( p => p.Network.Owner == conn );
 	}
 }

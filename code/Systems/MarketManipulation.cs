@@ -302,7 +302,7 @@ public sealed class MarketManipulation : Component
 
 	private GoblinPlayer FindPlayer( Connection caller )
 	{
-		return Scene.GetAllComponents<GoblinPlayer>()
+		return GoblinPlayer.All
 			.FirstOrDefault( p => p.Network.Owner == caller );
 	}
 

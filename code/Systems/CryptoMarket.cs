@@ -178,12 +178,16 @@ public sealed class CryptoMarket : Component
 			{
 				if ( token.IsRugged ) continue;
 				string status = token.Price > 1.5f ? "📈 PUMPING" : token.Price < 0.3f ? "📉 DUMPING" : "";
+				var history = tokenSystem.GetPriceHistory( token.Id );
+				float tokenChange = history.Count >= 2
+					? ((token.Price - history[0]) / history[0]) * 100f
+					: 0f;
 				data.Add( new CoinDisplayData(
 					token.Ticker,
 					token.Name,
 					status,
 					token.Price,
-					0f // TODO: track per-token price history for change%
+					tokenChange
 				));
 			}
 		}

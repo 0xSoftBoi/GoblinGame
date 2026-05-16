@@ -22,6 +22,17 @@ public sealed class RandomEvents : Component
 	private Random _rng = new();
 	private bool _hashBoostActive = false;
 
+	private static System.Collections.Generic.List<CryptoWallet> Wallets()
+	{
+		var list = new System.Collections.Generic.List<CryptoWallet>( GoblinPlayer.All.Count );
+		foreach ( var p in GoblinPlayer.All )
+		{
+			var w = p.Components.Get<CryptoWallet>();
+			if ( w is not null ) list.Add( w );
+		}
+		return list;
+	}
+
 	protected override void OnStart()
 	{
 		Instance = this;
@@ -87,7 +98,7 @@ public sealed class RandomEvents : Component
 		if ( _hashBoostActive ) return;
 		_hashBoostActive = true;
 
-		foreach ( var w in Scene.GetAllComponents<CryptoWallet>() )
+		foreach ( var w in Wallets() )
 		{
 			w.HashRate *= 2f;
 		}
@@ -102,7 +113,7 @@ public sealed class RandomEvents : Component
 	private async System.Threading.Tasks.Task RevertHashBoostAfter( float seconds )
 	{
 		await GameTask.DelaySeconds( seconds );
-		foreach ( var w in Scene.GetAllComponents<CryptoWallet>() )
+		foreach ( var w in Wallets() )
 		{
 			w.HashRate *= 0.5f;
 		}
@@ -129,7 +140,7 @@ public sealed class RandomEvents : Component
 	private void EventGoldRush()
 	{
 		// Grant bonus coins to whoever has the most rigs
-		var wallets = Scene.GetAllComponents<CryptoWallet>().ToList();
+		var wallets = Wallets();
 		if ( wallets.Count == 0 ) return;
 
 		var topMiner = wallets.OrderByDescending( w => w.MiningRigs ).First();
@@ -145,7 +156,7 @@ public sealed class RandomEvents : Component
 	private void EventTaxAudit()
 	{
 		// Tax 10% from the richest player
-		var wallets = Scene.GetAllComponents<CryptoWallet>().ToList();
+		var wallets = Wallets();
 		if ( wallets.Count == 0 ) return;
 
 		var richest = wallets.OrderByDescending( w => w.GoblinCoin ).First();
@@ -181,7 +192,7 @@ public sealed class RandomEvents : Component
 	{
 		// Trading fees spike — drain a flat fee from everyone
 		float fee = 15f;
-		foreach ( var w in Scene.GetAllComponents<CryptoWallet>() )
+		foreach ( var w in Wallets() )
 		{
 			w.GoblinCoin = MathF.Max( 0, w.GoblinCoin - fee );
 		}
@@ -195,7 +206,7 @@ public sealed class RandomEvents : Component
 	{
 		// Free coins for everyone
 		float amount = 20f + _rng.Next( 0, 40 );
-		foreach ( var w in Scene.GetAllComponents<CryptoWallet>() )
+		foreach ( var w in Wallets() )
 		{
 			w.Deposit( amount );
 		}
@@ -225,7 +236,7 @@ public sealed class RandomEvents : Component
 	private void EventRegulatorRaid()
 	{
 		// The "SEC" freezes the richest player's wallet
-		var wallets = Scene.GetAllComponents<CryptoWallet>().ToList();
+		var wallets = Wallets();
 		if ( wallets.Count == 0 ) return;
 
 		var target = wallets.OrderByDescending( w => w.GoblinCoin ).First();
@@ -249,7 +260,7 @@ public sealed class RandomEvents : Component
 	private void EventMemeViralMoment()
 	{
 		// Random player gets a huge bonus from "going viral"
-		var wallets = Scene.GetAllComponents<CryptoWallet>().ToList();
+		var wallets = Wallets();
 		if ( wallets.Count == 0 ) return;
 
 		var lucky = wallets[_rng.Next( wallets.Count )];

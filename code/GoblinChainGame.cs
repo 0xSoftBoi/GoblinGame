@@ -65,7 +65,7 @@ public sealed class GoblinChainGame : Component, Component.INetworkListener
 		// Spawn a player object owned by this connection
 		SpawnPlayer( connection );
 
-		ConnectedPlayers = Scene.GetAllComponents<GoblinPlayer>().Count();
+		ConnectedPlayers = GoblinPlayer.All.Count();
 
 		// Check if we have enough players to start
 		var state = Scene.GetAllComponents<GameStateManager>().FirstOrDefault();
@@ -86,7 +86,7 @@ public sealed class GoblinChainGame : Component, Component.INetworkListener
 		if ( IsProxy ) return;
 
 		// Destroy their player object
-		var player = Scene.GetAllComponents<GoblinPlayer>()
+		var player = GoblinPlayer.All
 			.FirstOrDefault( p => p.Network.Owner == connection );
 
 		if ( player is not null )
@@ -94,7 +94,7 @@ public sealed class GoblinChainGame : Component, Component.INetworkListener
 			player.GameObject.Destroy();
 		}
 
-		ConnectedPlayers = Scene.GetAllComponents<GoblinPlayer>().Count();
+		ConnectedPlayers = GoblinPlayer.All.Count();
 	}
 
 	// --- Spawning ---
