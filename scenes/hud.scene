@@ -1,0 +1,225 @@
+{
+	"__guid": "b2e8d4f1-7a3c-4b2e-9d6f-1c3e5a7b9d2f",
+	"__version": 0,
+	"GameObjects": [
+		{
+			"__guid": "c3f9e5a2-8b4d-4c3f-0e7a-2d4f6b8c0e3a",
+			"__version": 0,
+			"Enabled": true,
+			"Name": "HUD",
+			"Position": "0,0,0",
+			"Rotation": "0,0,0,1",
+			"Scale": "1,1,1",
+			"Tags": "",
+			"Components": [
+				{
+					"__type": "Sandbox.ScreenPanel",
+					"__version": 0,
+					"Enabled": true,
+					"Scale": 1.0,
+					"ZIndex": 0
+				}
+			],
+			"Children": [
+				{
+					"__guid": "d4a0f6b3-9c5e-4d4a-1f8b-3e5a7c9d1f4b",
+					"__version": 0,
+					"Enabled": true,
+					"Name": "GoblinHud",
+					"Position": "0,0,0",
+					"Rotation": "0,0,0,1",
+					"Scale": "1,1,1",
+					"Tags": "",
+					"Components": [
+						{
+							"__type": "GoblinChain.UI.GoblinHud",
+							"__version": 0,
+							"Enabled": true
+						}
+					],
+					"Children": []
+				},
+				{
+					"__guid": "e5b1a7c4-0d6f-4e5b-2a9c-4f6b8d0e2a5c",
+					"__version": 0,
+					"Enabled": true,
+					"Name": "CryptoTicker",
+					"Position": "0,0,0",
+					"Rotation": "0,0,0,1",
+					"Scale": "1,1,1",
+					"Tags": "",
+					"Components": [
+						{
+							"__type": "GoblinChain.UI.CryptoTicker",
+							"__version": 0,
+							"Enabled": true
+						}
+					],
+					"Children": []
+				},
+				{
+					"__guid": "f6c2b8d5-1e7a-4f6c-3b0d-5a7c9e1f3b6d",
+					"__version": 0,
+					"Enabled": true,
+					"Name": "TradePanel",
+					"Position": "0,0,0",
+					"Rotation": "0,0,0,1",
+					"Scale": "1,1,1",
+					"Tags": "",
+					"Components": [
+						{
+							"__type": "GoblinChain.UI.TradePanel",
+							"__version": 0,
+							"Enabled": true
+						}
+					],
+					"Children": []
+				},
+				{
+					"__guid": "a7d3c9e6-2f8b-4a7d-4c1e-6b8d0f2a4c7e",
+					"__version": 0,
+					"Enabled": true,
+					"Name": "PhaseAnnouncement",
+					"Position": "0,0,0",
+					"Rotation": "0,0,0,1",
+					"Scale": "1,1,1",
+					"Tags": "",
+					"Components": [
+						{
+							"__type": "GoblinChain.UI.PhaseAnnouncement",
+							"__version": 0,
+							"Enabled": true
+						}
+					],
+					"Children": []
+				},
+				{
+					"__guid": "b8e4d0f7-3a9c-4b8e-5d2f-7c9e1a3b5d8f",
+					"__version": 0,
+					"Enabled": true,
+					"Name": "NotificationFeed",
+					"Position": "0,0,0",
+					"Rotation": "0,0,0,1",
+					"Scale": "1,1,1",
+					"Tags": "",
+					"Components": [
+						{
+							"__type": "GoblinChain.UI.NotificationFeed",
+							"__version": 0,
+							"Enabled": true
+						}
+					],
+					"Children": []
+				},
+				{
+					"__guid": "c9f5e1a8-4b0d-4c9f-6e3a-8d0f2b4c6e9a",
+					"__version": 0,
+					"Enabled": true,
+					"Name": "ResultsScreen",
+					"Position": "0,0,0",
+					"Rotation": "0,0,0,1",
+					"Scale": "1,1,1",
+					"Tags": "",
+					"Components": [
+						{
+							"__type": "GoblinChain.UI.ResultsScreen",
+							"__version": 0,
+							"Enabled": true
+						}
+					],
+					"Children": []
+				},
+				{
+					"__guid": "d0a6f2b9-5c1e-4d0a-7f4b-9e1a3c5d7f0b",
+					"__version": 0,
+					"Enabled": true,
+					"Name": "GoblinPhone",
+					"Position": "0,0,0",
+					"Rotation": "0,0,0,1",
+					"Scale": "1,1,1",
+					"Tags": "",
+					"Components": [
+						{
+							"__type": "GoblinChain.UI.GoblinPhone",
+							"__version": 0,
+							"Enabled": true
+						}
+					],
+					"Children": []
+				},
+				{
+					"__guid": "e1b7a3c0-6d2f-4e1b-8a5c-0f2b4d6e8a1c",
+					"__version": 0,
+					"Enabled": true,
+					"Name": "TokenCreator",
+					"Position": "0,0,0",
+					"Rotation": "0,0,0,1",
+					"Scale": "1,1,1",
+					"Tags": "",
+					"Components": [
+						{
+							"__type": "GoblinChain.UI.TokenCreator",
+							"__version": 0,
+							"Enabled": true
+						}
+					],
+					"Children": []
+				},
+				{
+					"__guid": "f2c8b4d1-7e3a-4f2c-9b6d-1a3c5e7f9b2d",
+					"__version": 0,
+					"Enabled": true,
+					"Name": "RugPullPrompt",
+					"Position": "0,0,0",
+					"Rotation": "0,0,0,1",
+					"Scale": "1,1,1",
+					"Tags": "",
+					"Components": [
+						{
+							"__type": "GoblinChain.UI.RugPullPrompt",
+							"__version": 0,
+							"Enabled": true
+						}
+					],
+					"Children": []
+				},
+				{
+					"__guid": "a3d9c5e2-8f4b-4a3d-0c7e-2b4d6f8a0c3e",
+					"__version": 0,
+					"Enabled": true,
+					"Name": "SECRaidPanel",
+					"Position": "0,0,0",
+					"Rotation": "0,0,0,1",
+					"Scale": "1,1,1",
+					"Tags": "",
+					"Components": [
+						{
+							"__type": "GoblinChain.UI.SECRaidPanel",
+							"__version": 0,
+							"Enabled": true
+						}
+					],
+					"Children": []
+				},
+				{
+					"__guid": "b4e0d6f3-9a5c-4b4e-1d8f-3c5e7a9b1d4f",
+					"__version": 0,
+					"Enabled": true,
+					"Name": "AuditVote",
+					"Position": "0,0,0",
+					"Rotation": "0,0,0,1",
+					"Scale": "1,1,1",
+					"Tags": "",
+					"Components": [
+						{
+							"__type": "GoblinChain.UI.AuditVote",
+							"__version": 0,
+							"Enabled": true
+						}
+					],
+					"Children": []
+				}
+			]
+		}
+	]
+}

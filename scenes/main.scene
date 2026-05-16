@@ -1,0 +1,483 @@
+{
+	"__guid": "a3f7c2d1-8e4b-4a19-b6f3-2d8e7c1a9f05",
+	"__version": 0,
+	"GameObjects": [
+		{
+			"__guid": "b1e2d3c4-f5a6-4b78-9c0d-1e2f3a4b5c6d",
+			"__version": 0,
+			"Enabled": true,
+			"Name": "GameManagers",
+			"Position": "0,0,0",
+			"Rotation": "0,0,0,1",
+			"Scale": "1,1,1",
+			"Tags": "",
+			"Components": [
+				{
+					"__type": "GoblinChain.GoblinChainGame",
+					"__version": 0,
+					"Enabled": true,
+					"MinPlayers": 4,
+					"MaxPlayers": 8,
+					"DebugSkipMinPlayers": true,
+					"PlayerPrefab": { "__guid": "f3c4d5e6-f7a8-4b9c-0d1e-2f3a4b5c6d7e" }
+				},
+				{
+					"__type": "GoblinChain.GameStateManager",
+					"__version": 0,
+					"Enabled": true,
+					"PregameDuration": 10.0,
+					"MiningPhaseDuration": 90.0,
+					"ShillPhaseDuration": 60.0,
+					"ChaosPhaseDuration": 45.0,
+					"ResultsDuration": 15.0,
+					"MaxRounds": 3
+				},
+				{
+					"__type": "GoblinChain.CryptoMarket",
+					"__version": 0,
+					"Enabled": true
+				},
+				{
+					"__type": "GoblinChain.TokenSystem",
+					"__version": 0,
+					"Enabled": true,
+					"CreationCost": 50.0,
+					"BaseTokenPrice": 1.0,
+					"PriceTickInterval": 2.0,
+					"MaxTokensPerPlayer": 1.0,
+					"RugPullReputationHit": 0.3,
+					"PivotCost": 100.0
+				},
+				{
+					"__type": "GoblinChain.GoblinTwitter",
+					"__version": 0,
+					"Enabled": true,
+					"MaxFeedSize": 50,
+					"TrendingBonusBuyPressure": 0.15,
+					"LikePriceImpact": 0.005,
+					"RepostPriceImpact": 0.015,
+					"FudEffectivenessReduction": 0.3,
+					"ReportThreshold": 3.0,
+					"SECHeatPerReport": 10.0
+				},
+				{
+					"__type": "GoblinChain.TradingSystem",
+					"__version": 0,
+					"Enabled": true
+				},
+				{
+					"__type": "GoblinChain.RandomEvents",
+					"__version": 0,
+					"Enabled": true
+				},
+				{
+					"__type": "GoblinChain.SECSystem",
+					"__version": 0,
+					"Enabled": true
+				},
+				{
+					"__type": "GoblinChain.SocialDeduction",
+					"__version": 0,
+					"Enabled": true
+				},
+				{
+					"__type": "GoblinChain.NetworkedRigSpawner",
+					"__version": 0,
+					"Enabled": true,
+					"RigPrefab": { "__guid": "b6f7a8b9-c0d1-4e2f-3a4b-5c6d7e8f9a0b" },
+					"MaxRigsPerPlayer": 5,
+					"PlacementRange": 200.0,
+					"RigCost": 100.0,
+					"BaseHashPerRig": 5.0
+				},
+				{
+					"__type": "GoblinChain.NPCInvestors",
+					"__version": 0,
+					"Enabled": true,
+					"NPCCount": 50,
+					"TickInterval": 3.0,
+					"BaseBuyChance": 0.3,
+					"BaseSellChance": 0.15,
+					"FOMOMultiplier": 2.0,
+					"FUDMultiplier": 2.5
+				},
+				{
+					"__type": "GoblinChain.MarketManipulation",
+					"__version": 0,
+					"Enabled": true
+				},
+				{
+					"__type": "GoblinChain.OfficeSetup",
+					"__version": 0,
+					"Enabled": true,
+					"OfficeCenter": "0,0,0",
+					"OfficeWidth": 800.0,
+					"OfficeDepth": 600.0,
+					"DeskRows": 3,
+					"DesksPerRow": 4,
+					"DeskSpacing": 150.0,
+					"RowSpacing": 200.0
+				}
+			],
+			"Children": []
+		},
+		{
+			"__guid": "c2d3e4f5-a6b7-4c89-0d1e-2f3a4b5c6d7e",
+			"__version": 0,
+			"Enabled": true,
+			"Name": "Lighting",
+			"Position": "0,0,300",
+			"Rotation": "0,0,0,1",
+			"Scale": "1,1,1",
+			"Tags": "",
+			"Components": [
+				{
+					"__type": "Sandbox.DirectionalLight",
+					"__version": 0,
+					"Enabled": true,
+					"LightColor": "1,0.95,0.85,1",
+					"Brightness": 3.0,
+					"ShadowsEnabled": true
+				}
+			],
+			"Children": []
+		},
+		{
+			"__guid": "d3e4f5a6-b7c8-4d90-1e2f-3a4b5c6d7e8f",
+			"__version": 0,
+			"Enabled": true,
+			"Name": "Sky",
+			"Position": "0,0,0",
+			"Rotation": "0,0,0,1",
+			"Scale": "1,1,1",
+			"Tags": "",
+			"Components": [
+				{
+					"__type": "Sandbox.Sky",
+					"__version": 0,
+					"Enabled": true
+				}
+			],
+			"Children": []
+		},
+		{
+			"__guid": "e4f5a6b7-c8d9-4e01-2f3a-4b5c6d7e8f9a",
+			"__version": 0,
+			"Enabled": true,
+			"Name": "Office_Floor",
+			"Position": "0,0,-16",
+			"Rotation": "0,0,0,1",
+			"Scale": "1,1,1",
+			"Tags": "solid",
+			"Components": [
+				{
+					"__type": "Sandbox.ModelRenderer",
+					"__version": 0,
+					"Enabled": true,
+					"Model": "models/dev/box.vmdl",
+					"Tint": "0.35,0.3,0.28,1"
+				},
+				{
+					"__type": "Sandbox.ModelCollider",
+					"__version": 0,
+					"Enabled": true,
+					"Model": "models/dev/box.vmdl"
+				}
+			],
+			"Children": [],
+			"LocalScale": "1600,1200,32"
+		},
+		{
+			"__guid": "f5a6b7c8-d9e0-4f12-3a4b-5c6d7e8f9a0b",
+			"__version": 0,
+			"Enabled": true,
+			"Name": "Office_WallNorth",
+			"Position": "0,616,200",
+			"Rotation": "0,0,0,1",
+			"Scale": "1,1,1",
+			"Tags": "solid",
+			"Components": [
+				{
+					"__type": "Sandbox.ModelRenderer",
+					"__version": 0,
+					"Enabled": true,
+					"Model": "models/dev/box.vmdl",
+					"Tint": "0.9,0.88,0.85,1"
+				},
+				{
+					"__type": "Sandbox.ModelCollider",
+					"__version": 0,
+					"Enabled": true,
+					"Model": "models/dev/box.vmdl"
+				}
+			],
+			"Children": [],
+			"LocalScale": "1600,32,400"
+		},
+		{
+			"__guid": "a6b7c8d9-e0f1-4023-4b5c-6d7e8f9a0b1c",
+			"__version": 0,
+			"Enabled": true,
+			"Name": "Office_WallSouth",
+			"Position": "0,-616,200",
+			"Rotation": "0,0,0,1",
+			"Scale": "1,1,1",
+			"Tags": "solid",
+			"Components": [
+				{
+					"__type": "Sandbox.ModelRenderer",
+					"__version": 0,
+					"Enabled": true,
+					"Model": "models/dev/box.vmdl",
+					"Tint": "0.9,0.88,0.85,1"
+				},
+				{
+					"__type": "Sandbox.ModelCollider",
+					"__version": 0,
+					"Enabled": true,
+					"Model": "models/dev/box.vmdl"
+				}
+			],
+			"Children": [],
+			"LocalScale": "1600,32,400"
+		},
+		{
+			"__guid": "b7c8d9e0-f1a2-4134-5c6d-7e8f9a0b1c2d",
+			"__version": 0,
+			"Enabled": true,
+			"Name": "Office_WallEast",
+			"Position": "816,0,200",
+			"Rotation": "0,0,0,1",
+			"Scale": "1,1,1",
+			"Tags": "solid",
+			"Components": [
+				{
+					"__type": "Sandbox.ModelRenderer",
+					"__version": 0,
+					"Enabled": true,
+					"Model": "models/dev/box.vmdl",
+					"Tint": "0.9,0.88,0.85,1"
+				},
+				{
+					"__type": "Sandbox.ModelCollider",
+					"__version": 0,
+					"Enabled": true,
+					"Model": "models/dev/box.vmdl"
+				}
+			],
+			"Children": [],
+			"LocalScale": "32,1200,400"
+		},
+		{
+			"__guid": "c8d9e0f1-a2b3-4245-6d7e-8f9a0b1c2d3e",
+			"__version": 0,
+			"Enabled": true,
+			"Name": "Office_WallWest",
+			"Position": "-816,0,200",
+			"Rotation": "0,0,0,1",
+			"Scale": "1,1,1",
+			"Tags": "solid",
+			"Components": [
+				{
+					"__type": "Sandbox.ModelRenderer",
+					"__version": 0,
+					"Enabled": true,
+					"Model": "models/dev/box.vmdl",
+					"Tint": "0.9,0.88,0.85,1"
+				},
+				{
+					"__type": "Sandbox.ModelCollider",
+					"__version": 0,
+					"Enabled": true,
+					"Model": "models/dev/box.vmdl"
+				}
+			],
+			"Children": [],
+			"LocalScale": "32,1200,400"
+		},
+		{
+			"__guid": "d9e0f1a2-b3c4-4356-7e8f-9a0b1c2d3e4f",
+			"__version": 0,
+			"Enabled": true,
+			"Name": "Office_Ceiling",
+			"Position": "0,0,416",
+			"Rotation": "0,0,0,1",
+			"Scale": "1,1,1",
+			"Tags": "solid",
+			"Components": [
+				{
+					"__type": "Sandbox.ModelRenderer",
+					"__version": 0,
+					"Enabled": true,
+					"Model": "models/dev/box.vmdl",
+					"Tint": "0.95,0.95,0.95,1"
+				},
+				{
+					"__type": "Sandbox.ModelCollider",
+					"__version": 0,
+					"Enabled": true,
+					"Model": "models/dev/box.vmdl"
+				}
+			],
+			"Children": [],
+			"LocalScale": "1600,1200,32"
+		},
+		{
+			"__guid": "e0f1a2b3-c4d5-4467-8f9a-0b1c2d3e4f5a",
+			"__version": 0,
+			"Enabled": true,
+			"Name": "SpawnPoints",
+			"Position": "0,0,0",
+			"Rotation": "0,0,0,1",
+			"Scale": "1,1,1",
+			"Tags": "",
+			"Components": [],
+			"Children": [
+				{
+					"__guid": "f1a2b3c4-d5e6-4578-9a0b-1c2d3e4f5a6b",
+					"__version": 0,
+					"Enabled": true,
+					"Name": "SpawnPoint_1",
+					"Position": "-300,-200,10",
+					"Rotation": "0,0,0,1",
+					"Scale": "1,1,1",
+					"Tags": "",
+					"Components": [
+						{
+							"__type": "GoblinChain.SpawnPoint",
+							"__version": 0,
+							"Enabled": true
+						}
+					],
+					"Children": []
+				},
+				{
+					"__guid": "a2b3c4d5-e6f7-4689-0b1c-2d3e4f5a6b7c",
+					"__version": 0,
+					"Enabled": true,
+					"Name": "SpawnPoint_2",
+					"Position": "300,-200,10",
+					"Rotation": "0,0,0,1",
+					"Scale": "1,1,1",
+					"Tags": "",
+					"Components": [
+						{
+							"__type": "GoblinChain.SpawnPoint",
+							"__version": 0,
+							"Enabled": true
+						}
+					],
+					"Children": []
+				},
+				{
+					"__guid": "b3c4d5e6-f7a8-4790-1c2d-3e4f5a6b7c8d",
+					"__version": 0,
+					"Enabled": true,
+					"Name": "SpawnPoint_3",
+					"Position": "-300,200,10",
+					"Rotation": "0,0,0,1",
+					"Scale": "1,1,1",
+					"Tags": "",
+					"Components": [
+						{
+							"__type": "GoblinChain.SpawnPoint",
+							"__version": 0,
+							"Enabled": true
+						}
+					],
+					"Children": []
+				},
+				{
+					"__guid": "c4d5e6f7-a8b9-4801-2d3e-4f5a6b7c8d9e",
+					"__version": 0,
+					"Enabled": true,
+					"Name": "SpawnPoint_4",
+					"Position": "300,200,10",
+					"Rotation": "0,0,0,1",
+					"Scale": "1,1,1",
+					"Tags": "",
+					"Components": [
+						{
+							"__type": "GoblinChain.SpawnPoint",
+							"__version": 0,
+							"Enabled": true
+						}
+					],
+					"Children": []
+				},
+				{
+					"__guid": "d5e6f7a8-b9c0-4912-3e4f-5a6b7c8d9e0f",
+					"__version": 0,
+					"Enabled": true,
+					"Name": "SpawnPoint_5",
+					"Position": "-600,0,10",
+					"Rotation": "0,0,0,1",
+					"Scale": "1,1,1",
+					"Tags": "",
+					"Components": [
+						{
+							"__type": "GoblinChain.SpawnPoint",
+							"__version": 0,
+							"Enabled": true
+						}
+					],
+					"Children": []
+				},
+				{
+					"__guid": "e6f7a8b9-c0d1-4023-4f5a-6b7c8d9e0f1a",
+					"__version": 0,
+					"Enabled": true,
+					"Name": "SpawnPoint_6",
+					"Position": "600,0,10",
+					"Rotation": "0,0,0,1",
+					"Scale": "1,1,1",
+					"Tags": "",
+					"Components": [
+						{
+							"__type": "GoblinChain.SpawnPoint",
+							"__version": 0,
+							"Enabled": true
+						}
+					],
+					"Children": []
+				},
+				{
+					"__guid": "f7a8b9c0-d1e2-4134-5a6b-7c8d9e0f1a2b",
+					"__version": 0,
+					"Enabled": true,
+					"Name": "SpawnPoint_7",
+					"Position": "0,-400,10",
+					"Rotation": "0,0,0,1",
+					"Scale": "1,1,1",
+					"Tags": "",
+					"Components": [
+						{
+							"__type": "GoblinChain.SpawnPoint",
+							"__version": 0,
+							"Enabled": true
+						}
+					],
+					"Children": []
+				},
+				{
+					"__guid": "a8b9c0d1-e2f3-4245-6b7c-8d9e0f1a2b3c",
+					"__version": 0,
+					"Enabled": true,
+					"Name": "SpawnPoint_8",
+					"Position": "0,400,10",
+					"Rotation": "0,0,0,1",
+					"Scale": "1,1,1",
+					"Tags": "",
+					"Components": [
+						{
+							"__type": "GoblinChain.SpawnPoint",
+							"__version": 0,
+							"Enabled": true
+						}
+					],
+					"Children": []
+				}
+			]
+		}
+	]
+}

@@ -1,0 +1,106 @@
+{
+	"__guid": "f3c4d5e6-f7a8-4b9c-0d1e-2f3a4b5c6d7e",
+	"__version": 0,
+	"GameObjects": [
+		{
+			"__guid": "f4d5e6f7-a8b9-4c0d-1e2f-3a4b5c6d7e8f",
+			"__version": 0,
+			"Enabled": true,
+			"Name": "Player",
+			"Position": "0,0,0",
+			"Rotation": "0,0,0,1",
+			"Scale": "1,1,1",
+			"Tags": "player",
+			"Components": [
+				{
+					"__type": "Sandbox.CharacterController",
+					"__version": 0,
+					"Enabled": true,
+					"Height": 72.0,
+					"Radius": 16.0,
+					"StepHeight": 18.0,
+					"GroundAngle": 45.0,
+					"Acceleration": 10.0
+				},
+				{
+					"__type": "Sandbox.ModelRenderer",
+					"__version": 0,
+					"Enabled": true,
+					"Model": "models/citizen/citizen.vmdl"
+				},
+				{
+					"__type": "Sandbox.CitizenAnimationHelper",
+					"__version": 0,
+					"Enabled": true
+				},
+				{
+					"__type": "Sandbox.Voice",
+					"__version": 0,
+					"Enabled": true
+				},
+				{
+					"__type": "GoblinChain.GoblinPlayer",
+					"__version": 0,
+					"Enabled": true,
+					"Speed": 160.0,
+					"RunSpeed": 290.0,
+					"CrouchSpeed": 90.0,
+					"JumpForce": 400.0,
+					"GroundFriction": 4.0,
+					"AirControl": 0.1,
+					"MaxAirForce": 50.0,
+					"InteractRange": 150.0,
+					"Head": { "__guid": "a5e6f7a8-b9c0-4d1e-2f3a-4b5c6d7e8f9a" },
+					"Body": { "__guid": "f4d5e6f7-a8b9-4c0d-1e2f-3a4b5c6d7e8f" }
+				},
+				{
+					"__type": "GoblinChain.PlayerInput",
+					"__version": 0,
+					"Enabled": true,
+					"SabotageCooldown": 10.0,
+					"PlaceRigCooldown": 2.0,
+					"EMPGrenadePrefab": { "__guid": "e1a2b3c4-d5e6-4f78-9a0b-1c2d3e4f5a6b" }
+				},
+				{
+					"__type": "GoblinChain.CryptoWallet",
+					"__version": 0,
+					"Enabled": true
+				},
+				{
+					"__type": "GoblinChain.ReputationTracker",
+					"__version": 0,
+					"Enabled": true
+				},
+				{
+					"__type": "GoblinChain.SabotageInventory",
+					"__version": 0,
+					"Enabled": true
+				},
+				{
+					"__type": "GoblinChain.ProximityVoice",
+					"__version": 0,
+					"Enabled": true
+				},
+				{
+					"__type": "GoblinChain.UI.PlayerNametag",
+					"__version": 0,
+					"Enabled": true
+				}
+			],
+			"Children": [
+				{
+					"__guid": "a5e6f7a8-b9c0-4d1e-2f3a-4b5c6d7e8f9a",
+					"__version": 0,
+					"Enabled": true,
+					"Name": "Head",
+					"Position": "0,0,64",
+					"Rotation": "0,0,0,1",
+					"Scale": "1,1,1",
+					"Tags": "",
+					"Components": [],
+					"Children": []
+				}
+			]
+		}
+	]
+}

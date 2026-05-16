@@ -1,0 +1,54 @@
+{
+	"__guid": "e1a2b3c4-d5e6-4f78-9a0b-1c2d3e4f5a6b",
+	"__version": 0,
+	"GameObjects": [
+		{
+			"__guid": "e2b3c4d5-e6f7-4089-ab1c-2d3e4f5a6b7c",
+			"__version": 0,
+			"Enabled": true,
+			"Name": "EMP",
+			"Position": "0,0,0",
+			"Rotation": "0,0,0,1",
+			"Scale": "1,1,1",
+			"Tags": "",
+			"Components": [
+				{
+					"__type": "Sandbox.Rigidbody",
+					"__version": 0,
+					"Enabled": true,
+					"Gravity": true,
+					"Mass": 1.0,
+					"LinearDamping": 0.05,
+					"AngularDamping": 0.1
+				},
+				{
+					"__type": "Sandbox.SphereCollider",
+					"__version": 0,
+					"Enabled": true,
+					"Radius": 6.0,
+					"IsTrigger": false
+				},
+				{
+					"__type": "Sandbox.ModelRenderer",
+					"__version": 0,
+					"Enabled": true,
+					"Model": "models/citizen_props/grenade01.vmdl",
+					"Tint": "0.2,0.8,0.2,1"
+				},
+				{
+					"__type": "GoblinChain.EMPGrenade",
+					"__version": 0,
+					"Enabled": true,
+					"ThrowForce": 1200.0,
+					"BlastRadius": 350.0,
+					"BlastForce": 5000.0,
+					"DisableDuration": 12.0,
+					"FuseTime": 3.0,
+					"ImpactSpeedThreshold": 80.0,
+					"WalletDrainPercent": 0.05
+				}
+			],
+			"Children": []
+		}
+	]
+}

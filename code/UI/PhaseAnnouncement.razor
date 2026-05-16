@@ -1,0 +1,101 @@
+@using Sandbox;
+@using Sandbox.UI;
+
+@namespace GoblinChain.UI
+@inherits PanelComponent
+
+<root class="phase-announce @(IsShowing ? "show" : "hide")">
+	<div class="announce-inner">
+		<div class="announce-round">ROUND @Round</div>
+		<div class="announce-phase @PhaseClass">@PhaseText</div>
+		<div class="announce-desc">@PhaseDesc</div>
+	</div>
+</root>
+
+<style>
+.phase-announce {
+	position: absolute;
+	left: 0; top: 0; right: 0; bottom: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	pointer-events: none;
+	transition: opacity 0.4s;
+}
+.phase-announce.hide { opacity: 0; }
+.phase-announce.show { opacity: 1; }
+
+.announce-inner { text-align: center; }
+
+.announce-round {
+	font-size: 12px;
+	color: #555;
+	letter-spacing: 6px;
+	margin-bottom: 6px;
+}
+
+.announce-phase {
+	font-size: 64px;
+	font-weight: bold;
+	letter-spacing: 10px;
+	text-shadow: 0 0 60px currentColor;
+	color: white;
+}
+.announce-phase.mining  { color: #00ff88; }
+.announce-phase.trading { color: #ffcc00; }
+.announce-phase.chaos   { color: #ff4444; }
+.announce-phase.results { color: #aa44ff; }
+
+.announce-desc {
+	font-size: 16px;
+	color: #666;
+	margin-top: 8px;
+	letter-spacing: 2px;
+}
+</style>
+
+@code
+{
+	public bool IsShowing { get; set; } = false;
+	public string PhaseText { get; set; } = "";
+	public string PhaseClass { get; set; } = "";
+	public string PhaseDesc { get; set; } = "";
+	public int Round { get; set; } = 1;
+
+	private GamePhase _lastPhase = GamePhase.WaitingForPlayers;
+	private float _showTimer;
+
+	protected override void OnUpdate()
+	{
+		var state = GameStateManager.Instance;
+		if ( state is null ) return;
+
+		// Detect phase change
+		if ( state.CurrentPhase != _lastPhase )
+		{
+			_lastPhase = state.CurrentPhase;
+			Round = state.CurrentRound;
+			TriggerAnnouncement( state.CurrentPhase );
+		}
+
+		// Auto-hide after timer
+		if ( _showTimer > 0 )
+		{
+			_showTimer -= Time.Delta;
+			if ( _showTimer <= 0 )
+				IsShowing = false;
+		}
+	}
+
+	private void TriggerAnnouncement( GamePhase phase )
+	{
+		if ( phase == GamePhase.WaitingForPlayers ) return;
+
+		IsShowing = true;
+		_showTimer = 3f;
+
+		PhaseText = phase.ToString().ToUpper();
+		PhaseClass = phase.ToString().ToLower();
+		PhaseDesc = GameLore.GetPhaseQuip( phase );
+	}
+}

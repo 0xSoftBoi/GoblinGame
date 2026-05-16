@@ -1,0 +1,122 @@
+@using Sandbox;
+@using Sandbox.UI;
+@using System.Collections.Generic;
+
+@namespace GoblinChain.UI
+@inherits PanelComponent
+
+<root class="notif-feed">
+	@foreach ( var n in ActiveNotifs )
+	{
+		<div class="notif @n.Tone @(n.Age > FadeDuration - 0.5f ? "fading" : "")">
+			<span class="notif-tag">@n.Tag</span>
+			<span class="notif-msg">@n.Message</span>
+		</div>
+	}
+</root>
+
+<style>
+.notif-feed {
+	position: absolute;
+	left: 50%;
+	top: 140px;
+	transform: translateX(-50%);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 4px;
+	pointer-events: none;
+	max-width: 500px;
+}
+
+.notif {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+	background: rgba(0, 0, 0, 0.88);
+	border: 1px solid #333;
+	border-radius: 3px;
+	padding: 6px 16px;
+	font-family: 'Consolas', monospace;
+	font-size: 12px;
+	transition: opacity 0.4s;
+	white-space: nowrap;
+}
+
+.notif.fading { opacity: 0; }
+
+.notif-tag {
+	font-weight: bold;
+	letter-spacing: 1px;
+	font-size: 10px;
+}
+
+.notif-msg { color: #aaa; }
+
+.notif.positive { border-color: #00ff88; }
+.notif.positive .notif-tag { color: #00ff88; }
+
+.notif.negative { border-color: #ff4444; }
+.notif.negative .notif-tag { color: #ff4444; }
+
+.notif.neutral { border-color: #ffcc00; }
+.notif.neutral .notif-tag { color: #ffcc00; }
+
+.notif.trade { border-color: #aa88ff; }
+.notif.trade .notif-tag { color: #aa88ff; }
+</style>
+
+@code
+{
+	public record Notification( string Tag, string Message, string Tone, float Age );
+
+	[Property] public float FadeDuration { get; set; } = 5f;
+	[Property] public int MaxVisible { get; set; } = 5;
+
+	private List<Notification> _notifications = new();
+	public List<Notification> ActiveNotifs { get; set; } = new();
+
+	/// <summary>
+	/// Called by RandomEvents, TradingSystem, etc. to push a message.
+	/// </summary>
+	public void PushNotification( string tag, string message, string tone = "neutral" )
+	{
+		_notifications.Insert( 0, new Notification( tag, message, tone, 0f ) );
+
+		// Cap total stored
+		if ( _notifications.Count > 20 )
+			_notifications.RemoveAt( _notifications.Count - 1 );
+	}
+
+	/// <summary>
+	/// Convenience: push a trade notification.
+	/// </summary>
+	public void PushTradeNotif( string message )
+	{
+		PushNotification( "TRADE", message, "trade" );
+	}
+
+	protected override void OnUpdate()
+	{
+		// Age all notifications
+		for ( int i = _notifications.Count - 1; i >= 0; i-- )
+		{
+			var n = _notifications[i];
+			float newAge = n.Age + Time.Delta;
+
+			if ( newAge > FadeDuration )
+			{
+				_notifications.RemoveAt( i );
+			}
+			else
+			{
+				_notifications[i] = n with { Age = newAge };
+			}
+		}
+
+		// Show top N
+		ActiveNotifs = _notifications
+			.Take( MaxVisible )
+			.ToList();
+	}
+}

@@ -1,0 +1,117 @@
+@using Sandbox;
+@using Sandbox.UI;
+@using System.Linq;
+
+@namespace GoblinChain.UI
+@inherits PanelComponent
+
+<root class="ticker-strip">
+	<div class="ticker-scroll">
+		@foreach ( var coin in Coins )
+		{
+			<div class="coin @(coin.Change >= 0 ? "up" : "down")">
+				<span class="sym">@coin.Symbol</span>
+				<span class="tagline">@coin.Tagline</span>
+				<span class="price">$@coin.Price.ToString("F3")</span>
+				<span class="change">@(coin.Change >= 0 ? "▲" : "▼") @System.MathF.Abs(coin.Change).ToString("F1")%</span>
+			</div>
+		}
+
+		<!-- Duplicate for seamless scroll loop -->
+		@foreach ( var coin in Coins )
+		{
+			<div class="coin @(coin.Change >= 0 ? "up" : "down")">
+				<span class="sym">@coin.Symbol</span>
+				<span class="tagline">@coin.Tagline</span>
+				<span class="price">$@coin.Price.ToString("F3")</span>
+				<span class="change">@(coin.Change >= 0 ? "▲" : "▼") @System.MathF.Abs(coin.Change).ToString("F1")%</span>
+			</div>
+		}
+	</div>
+</root>
+
+<style>
+.ticker-strip {
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	height: 32px;
+	background: rgba(0, 0, 0, 0.92);
+	border-top: 1px solid #222;
+	overflow: hidden;
+	pointer-events: none;
+}
+
+.ticker-scroll {
+	display: flex;
+	flex-direction: row;
+	gap: 40px;
+	padding: 6px 20px;
+	white-space: nowrap;
+	animation: ticker-slide 25s linear infinite;
+}
+
+@keyframes ticker-slide {
+	0%   { transform: translateX(0); }
+	100% { transform: translateX(-50%); }
+}
+
+.coin {
+	display: flex;
+	gap: 8px;
+	font-family: 'Consolas', monospace;
+	font-size: 13px;
+}
+
+.sym {
+	color: #888;
+	font-weight: bold;
+	letter-spacing: 1px;
+}
+
+.tagline { color: #444; font-size: 10px; font-style: italic; }
+
+.price { color: #ccc; }
+
+.up .price  { color: #ddd; }
+.down .price { color: #aaa; }
+
+.up .change   { color: #00ff88; }
+.down .change { color: #ff4444; }
+
+.up .sym   { color: #aaa; }
+.down .sym { color: #666; }
+</style>
+
+@code
+{
+	public record CoinEntry( string Symbol, string Tagline, float Price, float Change );
+
+	public List<CoinEntry> Coins { get; set; } = new();
+
+	protected override void OnUpdate()
+	{
+		var market = Scene.GetAllComponents<CryptoMarket>().FirstOrDefault();
+		if ( market is null )
+		{
+			// Placeholder data when market isn't loaded
+			if ( Coins.Count == 0 )
+			{
+				Coins = new List<CoinEntry>
+				{
+					new( "GBC", "The coin for the rest of us.", 1.000f, 0f ),
+					new( "GOBETH", "Smart contracts, dumb decisions.", 0.420f, 0f ),
+					new( "RUGDAO", "Transparency through obscurity.", 0.007f, 0f ),
+					new( "PONZI", "Early investors win.", 12.500f, 0f ),
+					new( "COPE", "Everything is fine.", 0.001f, 0f ),
+				};
+			}
+			return;
+		}
+
+		Coins = market.GetDisplayData()
+			.Select( d => new CoinEntry( d.Symbol, d.Tagline, d.Price, d.Change ) )
+			.ToList();
+	}
+}

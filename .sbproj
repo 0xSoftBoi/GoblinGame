@@ -1,0 +1,31 @@
+{
+  "Title": "GOBLIN CHAIN: Crypto Chaos Tycoon",
+  "Type": "game",
+  "Org": "goblindev",
+  "Ident": "goblin_chain",
+  "Schema": 1,
+  "HasAssets": true,
+  "AssetsPath": "",
+  "HasCode": true,
+  "CodePath": "/code/",
+  "Metadata": {
+    "MaxPlayers": 8,
+    "MinPlayers": 4,
+    "GameNetworkType": "Multiplayer",
+    "MapSelect": "Official",
+    "RankType": "None",
+    "PerMapRanking": false,
+    "LeaderboardType": "None",
+    "GameCategory": "Social",
+    "Summary": "4-8 player party game. Create meme tokens, shill them on GoblinTwitter, rug pull your friends.",
+    "Description": "GOBLIN CHAIN is a chaotic multiplayer party game where 4-8 goblins compete to get rich by launching meme tokens, shilling them on an in-game social feed, manipulating the market, and pulling the rug before anyone notices. Features a secret Rugger role (social deduction), SEC raid events, proximity voice chat for shady backroom deals, and 50 NPC retail investors who believe everything they read.",
+    "Public": true,
+    "ReferencedPackages": [],
+    "PackageReferences": [],
+    "Compiler": {
+      "RootNamespace": "GoblinChain",
+      "DefineConstants": "SANDBOX;ADDON;DEBUG"
+    },
+    "CsProjName": ""
+  }
+}

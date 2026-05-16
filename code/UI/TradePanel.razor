@@ -1,0 +1,438 @@
+@using Sandbox;
+@using Sandbox.UI;
+@using System.Linq;
+
+@namespace GoblinChain.UI
+@inherits PanelComponent
+
+<root class="trade-panel @(IsVisible ? "visible" : "hidden")">
+
+	<!-- ═══ PANEL HEADER ═══ -->
+	<div class="tp-header">
+		<span class="tp-title">TRADE</span>
+		<button class="tp-close" onclick="@Close">✕</button>
+	</div>
+
+	@if ( !HasTarget )
+	{
+		<!-- ═══ NO TARGET — Player Select ═══ -->
+		<div class="tp-body">
+			<div class="tp-hint">Select a player to trade with</div>
+			@foreach ( var p in NearbyPlayers )
+			{
+				<button class="tp-player-btn" onclick="@(() => SelectTarget(p.Id))">
+					<span class="tp-pname">@p.Name</span>
+					<span class="tp-pdist">@p.Distance.ToString("N0")u</span>
+				</button>
+			}
+			@if ( NearbyPlayers.Count == 0 )
+			{
+				<div class="tp-empty">No players nearby</div>
+			}
+		</div>
+	}
+	else
+	{
+		<!-- ═══ TRADE FORM ═══ -->
+		<div class="tp-body">
+			<div class="tp-target">
+				Trading with: <span class="tp-target-name">@TargetName</span>
+			</div>
+
+			<!-- Your offer -->
+			<div class="tp-section">
+				<div class="tp-section-label">YOU OFFER</div>
+				<div class="tp-input-row">
+					<span class="tp-input-label">GBC</span>
+					<button class="tp-btn-sm" onclick="@(() => AdjustOffer(-10))">-10</button>
+					<span class="tp-input-value">@OfferAmount.ToString("N0")</span>
+					<button class="tp-btn-sm" onclick="@(() => AdjustOffer(10))">+10</button>
+					<button class="tp-btn-sm" onclick="@(() => AdjustOffer(50))">+50</button>
+				</div>
+			</div>
+
+			<!-- You request -->
+			<div class="tp-section">
+				<div class="tp-section-label">YOU REQUEST</div>
+				<div class="tp-input-row">
+					<span class="tp-input-label">GBC</span>
+					<button class="tp-btn-sm" onclick="@(() => AdjustRequest(-10))">-10</button>
+					<span class="tp-input-value">@RequestAmount.ToString("N0")</span>
+					<button class="tp-btn-sm" onclick="@(() => AdjustRequest(10))">+10</button>
+					<button class="tp-btn-sm" onclick="@(() => AdjustRequest(50))">+50</button>
+				</div>
+			</div>
+
+			<!-- Buttons -->
+			<div class="tp-actions">
+				<button class="tp-btn send" onclick="@SendOffer">SEND OFFER</button>
+				<button class="tp-btn cancel" onclick="@ClearTarget">CANCEL</button>
+			</div>
+
+			<!-- Status -->
+			@if ( !string.IsNullOrEmpty( StatusMessage ) )
+			{
+				<div class="tp-status @StatusClass">@StatusMessage</div>
+			}
+		</div>
+	}
+
+	<!-- ═══ INCOMING OFFERS ═══ -->
+	@if ( IncomingOffers.Count > 0 )
+	{
+		<div class="tp-incoming">
+			<div class="tp-section-label">INCOMING OFFERS</div>
+			@foreach ( var offer in IncomingOffers )
+			{
+				<div class="tp-offer-card">
+					<div class="tp-offer-from">From: @offer.SenderName</div>
+					<div class="tp-offer-detail">
+						Offers <span class="up">@offer.TheirCoins GBC</span>
+						· Wants <span class="down">@offer.WantCoins GBC</span>
+					</div>
+					<div class="tp-offer-actions">
+						<button class="tp-btn-sm accept" onclick="@(() => AcceptOffer(offer.TradeId))">ACCEPT</button>
+						<button class="tp-btn-sm reject" onclick="@(() => RejectOffer(offer.TradeId))">REJECT</button>
+					</div>
+				</div>
+			}
+		</div>
+	}
+
+</root>
+
+<style>
+.trade-panel {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	width: 360px;
+	background: rgba(5, 5, 15, 0.96);
+	border: 1px solid #ffcc00;
+	border-radius: 6px;
+	pointer-events: all;
+	transition: opacity 0.2s;
+}
+
+.trade-panel.hidden { opacity: 0; pointer-events: none; }
+.trade-panel.visible { opacity: 1; }
+
+.tp-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 10px 16px;
+	border-bottom: 1px solid #333;
+}
+
+.tp-title {
+	font-size: 14px;
+	color: #ffcc00;
+	letter-spacing: 4px;
+	font-weight: bold;
+}
+
+.tp-close {
+	color: #555;
+	font-size: 16px;
+	cursor: pointer;
+	background: none;
+	border: none;
+}
+.tp-close:hover { color: #ff4444; }
+
+.tp-body { padding: 12px 16px; }
+
+.tp-hint { color: #555; font-size: 12px; margin-bottom: 8px; }
+.tp-empty { color: #333; font-size: 12px; text-align: center; padding: 20px; }
+
+.tp-player-btn {
+	display: flex;
+	justify-content: space-between;
+	width: 100%;
+	padding: 8px 12px;
+	margin: 4px 0;
+	background: rgba(255, 204, 0, 0.05);
+	border: 1px solid #333;
+	border-radius: 3px;
+	cursor: pointer;
+	color: white;
+	font-size: 13px;
+}
+.tp-player-btn:hover {
+	background: rgba(255, 204, 0, 0.15);
+	border-color: #ffcc00;
+}
+
+.tp-pname { color: #ccc; }
+.tp-pdist { color: #555; font-size: 11px; }
+
+.tp-target {
+	color: #888;
+	font-size: 12px;
+	margin-bottom: 12px;
+}
+.tp-target-name { color: #ffcc00; font-weight: bold; }
+
+.tp-section { margin-bottom: 12px; }
+
+.tp-section-label {
+	font-size: 10px;
+	color: #555;
+	letter-spacing: 2px;
+	margin-bottom: 6px;
+}
+
+.tp-input-row {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.tp-input-label { color: #ffcc00; font-size: 12px; min-width: 30px; }
+
+.tp-input-value {
+	color: white;
+	font-size: 18px;
+	font-weight: bold;
+	min-width: 60px;
+	text-align: center;
+}
+
+.tp-btn-sm {
+	padding: 4px 8px;
+	font-size: 11px;
+	background: rgba(255, 255, 255, 0.05);
+	border: 1px solid #333;
+	border-radius: 2px;
+	color: #aaa;
+	cursor: pointer;
+}
+.tp-btn-sm:hover { border-color: #ffcc00; color: white; }
+.tp-btn-sm.accept { color: #00ff88; border-color: #00ff88; }
+.tp-btn-sm.accept:hover { background: rgba(0, 255, 136, 0.15); }
+.tp-btn-sm.reject { color: #ff4444; border-color: #ff4444; }
+.tp-btn-sm.reject:hover { background: rgba(255, 68, 68, 0.15); }
+
+.tp-actions {
+	display: flex;
+	gap: 8px;
+	margin-top: 16px;
+}
+
+.tp-btn {
+	flex: 1;
+	padding: 10px;
+	font-size: 13px;
+	font-weight: bold;
+	letter-spacing: 2px;
+	border: 1px solid #333;
+	border-radius: 3px;
+	cursor: pointer;
+	text-align: center;
+}
+.tp-btn.send {
+	background: rgba(0, 255, 136, 0.1);
+	color: #00ff88;
+	border-color: #00ff88;
+}
+.tp-btn.send:hover { background: rgba(0, 255, 136, 0.25); }
+.tp-btn.cancel {
+	background: rgba(255, 255, 255, 0.03);
+	color: #555;
+}
+.tp-btn.cancel:hover { color: #aaa; border-color: #555; }
+
+.tp-status {
+	margin-top: 10px;
+	font-size: 12px;
+	text-align: center;
+	padding: 6px;
+	border-radius: 2px;
+}
+.tp-status.success { color: #00ff88; background: rgba(0, 255, 136, 0.08); }
+.tp-status.error { color: #ff4444; background: rgba(255, 68, 68, 0.08); }
+.tp-status.info { color: #aaa; }
+
+.tp-incoming {
+	border-top: 1px solid #222;
+	padding: 12px 16px;
+}
+
+.tp-offer-card {
+	background: rgba(255, 204, 0, 0.05);
+	border: 1px solid #333;
+	border-radius: 3px;
+	padding: 8px 12px;
+	margin: 6px 0;
+}
+
+.tp-offer-from { color: #aaa; font-size: 12px; }
+.tp-offer-detail { color: #ccc; font-size: 13px; margin: 4px 0; }
+.tp-offer-detail .up { color: #00ff88; }
+.tp-offer-detail .down { color: #ff4444; }
+.tp-offer-actions { display: flex; gap: 6px; margin-top: 6px; }
+</style>
+
+@code
+{
+	// === Data types ===
+	public record NearbyPlayer( Guid Id, string Name, float Distance );
+	public record IncomingOffer( Guid TradeId, string SenderName, float TheirCoins, float WantCoins );
+
+	// === State ===
+	public bool IsVisible { get; set; } = false;
+	public bool HasTarget { get; set; } = false;
+	public Guid TargetId { get; set; }
+	public string TargetName { get; set; } = "";
+	public float OfferAmount { get; set; } = 0f;
+	public float RequestAmount { get; set; } = 0f;
+	public string StatusMessage { get; set; } = "";
+	public string StatusClass { get; set; } = "info";
+	public List<NearbyPlayer> NearbyPlayers { get; set; } = new();
+	public List<IncomingOffer> IncomingOffers { get; set; } = new();
+
+	private float _statusTimer;
+
+	// === Toggle ===
+
+	public void Toggle()
+	{
+		IsVisible = !IsVisible;
+		Mouse.Visible = IsVisible;
+		if ( !IsVisible ) ClearTarget();
+	}
+
+	public void Close()
+	{
+		IsVisible = false;
+		Mouse.Visible = false;
+		ClearTarget();
+	}
+
+	// === Target Selection ===
+
+	void SelectTarget( Guid playerId )
+	{
+		TargetId = playerId;
+		var p = NearbyPlayers.FirstOrDefault( x => x.Id == playerId );
+		TargetName = p?.Name ?? "???";
+		HasTarget = true;
+		OfferAmount = 0;
+		RequestAmount = 0;
+		StatusMessage = "";
+	}
+
+	void ClearTarget()
+	{
+		HasTarget = false;
+		TargetId = Guid.Empty;
+		TargetName = "";
+		OfferAmount = 0;
+		RequestAmount = 0;
+		StatusMessage = "";
+	}
+
+	// === Amount Adjustments ===
+
+	void AdjustOffer( float delta )
+	{
+		OfferAmount = System.MathF.Max( 0, OfferAmount + delta );
+
+		// Clamp to what player can afford
+		var local = Scene.GetAllComponents<GoblinPlayer>().FirstOrDefault( p => !p.IsProxy );
+		var w = local?.Components.Get<CryptoWallet>();
+		if ( w is not null )
+			OfferAmount = System.MathF.Min( OfferAmount, w.GoblinCoin );
+	}
+
+	void AdjustRequest( float delta )
+	{
+		RequestAmount = System.MathF.Max( 0, RequestAmount + delta );
+	}
+
+	// === Actions ===
+
+	void SendOffer()
+	{
+		if ( OfferAmount <= 0 && RequestAmount <= 0 )
+		{
+			ShowStatus( "Enter an amount", "error" );
+			return;
+		}
+
+		var trading = Scene.GetAllComponents<TradingSystem>().FirstOrDefault();
+		if ( trading is null )
+		{
+			ShowStatus( "Trading system not found", "error" );
+			return;
+		}
+
+		trading.RequestTrade( TargetId, OfferAmount, RequestAmount, "" );
+		ShowStatus( "Offer sent!", "success" );
+		OfferAmount = 0;
+		RequestAmount = 0;
+	}
+
+	void AcceptOffer( Guid tradeId )
+	{
+		var trading = Scene.GetAllComponents<TradingSystem>().FirstOrDefault();
+		trading?.AcceptTrade( tradeId );
+		ShowStatus( "Trade accepted!", "success" );
+	}
+
+	void RejectOffer( Guid tradeId )
+	{
+		var trading = Scene.GetAllComponents<TradingSystem>().FirstOrDefault();
+		trading?.RejectTrade( tradeId );
+	}
+
+	void ShowStatus( string msg, string cls )
+	{
+		StatusMessage = msg;
+		StatusClass = cls;
+		_statusTimer = 3f;
+	}
+
+	// === Update ===
+
+	protected override void OnUpdate()
+	{
+		if ( !IsVisible ) return;
+
+		// Toggle with T key
+		if ( Input.Pressed( "Trade" ) )
+		{
+			Close();
+			return;
+		}
+
+		// Scan for nearby players
+		var local = Scene.GetAllComponents<GoblinPlayer>().FirstOrDefault( p => !p.IsProxy );
+		if ( local is not null )
+		{
+			NearbyPlayers = Scene.GetAllComponents<GoblinPlayer>()
+				.Where( p => p.IsProxy ) // Other players only
+				.Select( p => new NearbyPlayer(
+					p.Id,
+					p.Network.Owner?.DisplayName ?? "???",
+					Vector3.DistanceBetween( local.WorldPosition, p.WorldPosition )
+				) )
+				.Where( p => p.Distance < 400f )
+				.OrderBy( p => p.Distance )
+				.ToList();
+		}
+
+		// TODO: Pull incoming offers from TradingSystem
+		// For now, this would check TradingSystem.ActiveTrades for trades targeting us
+
+		// Status timer
+		if ( _statusTimer > 0 )
+		{
+			_statusTimer -= Time.Delta;
+			if ( _statusTimer <= 0 )
+				StatusMessage = "";
+		}
+	}
+}

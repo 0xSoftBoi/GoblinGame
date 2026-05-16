@@ -1,0 +1,46 @@
+{
+	"__guid": "b6f7a8b9-c0d1-4e2f-3a4b-5c6d7e8f9a0b",
+	"__version": 0,
+	"GameObjects": [
+		{
+			"__guid": "c7a8b9c0-d1e2-4f3a-4b5c-6d7e8f9a0b1c",
+			"__version": 0,
+			"Enabled": true,
+			"Name": "MiningRig",
+			"Position": "0,0,0",
+			"Rotation": "0,0,0,1",
+			"Scale": "1,1,1",
+			"Tags": "rig",
+			"Components": [
+				{
+					"__type": "Sandbox.ModelRenderer",
+					"__version": 0,
+					"Enabled": true,
+					"Model": "models/dev/box.vmdl",
+					"Tint": "0.15,0.15,0.15,1"
+				},
+				{
+					"__type": "Sandbox.BoxCollider",
+					"__version": 0,
+					"Enabled": true,
+					"Scale": "40,30,50",
+					"IsTrigger": false
+				},
+				{
+					"__type": "GoblinChain.MiningRig",
+					"__version": 0,
+					"Enabled": true,
+					"BaseHashRate": 5.0,
+					"MaxDurability": 100.0,
+					"RepairCost": 25.0
+				},
+				{
+					"__type": "GoblinChain.UI.MiningRigScreen",
+					"__version": 0,
+					"Enabled": true
+				}
+			],
+			"Children": []
+		}
+	]
+}

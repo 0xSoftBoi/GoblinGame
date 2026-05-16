@@ -1,0 +1,234 @@
+@using Sandbox;
+@using Sandbox.UI;
+@using GoblinChain;
+@inherits PanelComponent
+
+@namespace GoblinChain.UI
+
+<root>
+    @if ( IsVisible )
+    {
+        <div class="audit-overlay">
+            <div class="audit-panel">
+                @if ( !HasVoted && Phase == AuditPhase.Voting )
+                {
+                    <div class="header">⚖️ AUDIT VOTE</div>
+                    <div class="accusation">
+                        <span class="accuser">@AccuserName</span> accuses
+                        <span class="accused">@AccusedName</span> of being a RUGGER!
+                    </div>
+                    <div class="cost">Cost to initiate: 1,000 GBC (already paid)</div>
+                    <div class="prompt">Is <span class="accused">@AccusedName</span> the Rugger?</div>
+                    <div class="vote-buttons">
+                        <button class="vote-yes" onclick="@(() => CastVote(true))">🔴 GUILTY</button>
+                        <button class="vote-no" onclick="@(() => CastVote(false))">🟢 INNOCENT</button>
+                    </div>
+                    <div class="timer">Vote closes in @TimeLeft s</div>
+                }
+                else if ( HasVoted && Phase == AuditPhase.Voting )
+                {
+                    <div class="header">⚖️ AUDIT VOTE</div>
+                    <div class="waiting">Vote cast. Waiting for others...</div>
+                    <div class="tally">Guilty: @GuiltyCount | Innocent: @InnocentCount</div>
+                    <div class="timer">@TimeLeft s remaining</div>
+                }
+                else if ( Phase == AuditPhase.Result )
+                {
+                    <div class="header">⚖️ VERDICT</div>
+                    @if ( WasGuilty )
+                    {
+                        <div class="result guilty">
+                            <span class="accused">@AccusedName</span> was found GUILTY!
+                            @if ( WasActuallyRugger )
+                            {
+                                <div class="truth correct">✅ They WERE the Rugger! Shadow Wallet exposed!</div>
+                            }
+                            else
+                            {
+                                <div class="truth wrong">❌ They were INNOCENT! Accusers lose 500 GBC each!</div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="result innocent">
+                            <span class="accused">@AccusedName</span> was found INNOCENT.
+                            @if ( WasActuallyRugger )
+                            {
+                                <div class="truth wrong">😈 ...but they WERE the Rugger! They got away with it!</div>
+                            }
+                            else
+                            {
+                                <div class="truth correct">✅ Correct! They were clean.</div>
+                            }
+                        </div>
+                    }
+                </div>
+                }
+            </div>
+        </div>
+    }
+</root>
+
+<style>
+    .audit-overlay {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0, 0, 0, 0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 900;
+    }
+    .audit-panel {
+        background: #1a1a2e;
+        border: 3px solid #e8b931;
+        border-radius: 12px;
+        padding: 30px 40px;
+        min-width: 450px;
+        max-width: 550px;
+        text-align: center;
+        font-family: 'Consolas', monospace;
+    }
+    .header {
+        font-size: 28px;
+        font-weight: bold;
+        color: #e8b931;
+        margin-bottom: 16px;
+    }
+    .accusation {
+        font-size: 18px;
+        color: #ccc;
+        margin-bottom: 12px;
+    }
+    .accuser { color: #4ecdc4; font-weight: bold; }
+    .accused { color: #ff6b6b; font-weight: bold; }
+    .cost {
+        font-size: 13px;
+        color: #888;
+        margin-bottom: 16px;
+    }
+    .prompt {
+        font-size: 20px;
+        color: #fff;
+        margin-bottom: 20px;
+    }
+    .vote-buttons {
+        display: flex;
+        gap: 20px;
+        justify-content: center;
+        margin-bottom: 16px;
+    }
+    .vote-yes, .vote-no {
+        padding: 14px 32px;
+        font-size: 18px;
+        font-weight: bold;
+        border: 2px solid;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .vote-yes {
+        background: #8b0000;
+        border-color: #ff4444;
+        color: #ff4444;
+    }
+    .vote-yes:hover { background: #aa0000; transform: scale(1.05); }
+    .vote-no {
+        background: #004400;
+        border-color: #44ff44;
+        color: #44ff44;
+    }
+    .vote-no:hover { background: #006600; transform: scale(1.05); }
+    .timer {
+        font-size: 14px;
+        color: #e8b931;
+    }
+    .waiting {
+        font-size: 18px;
+        color: #aaa;
+        margin-bottom: 12px;
+    }
+    .tally {
+        font-size: 16px;
+        color: #ccc;
+        margin-bottom: 12px;
+    }
+    .result {
+        font-size: 20px;
+        margin-bottom: 16px;
+    }
+    .result.guilty { color: #ff4444; }
+    .result.innocent { color: #44ff44; }
+    .truth {
+        font-size: 16px;
+        margin-top: 12px;
+    }
+    .truth.correct { color: #4ecdc4; }
+    .truth.wrong { color: #ff6b6b; }
+</style>
+
+@code {
+    public enum AuditPhase { Hidden, Voting, Result }
+
+    public bool IsVisible { get; set; } = false;
+    public AuditPhase Phase { get; set; } = AuditPhase.Hidden;
+    public string AccuserName { get; set; } = "";
+    public string AccusedName { get; set; } = "";
+    public bool HasVoted { get; set; } = false;
+    public int GuiltyCount { get; set; } = 0;
+    public int InnocentCount { get; set; } = 0;
+    public int TimeLeft { get; set; } = 30;
+    public bool WasGuilty { get; set; } = false;
+    public bool WasActuallyRugger { get; set; } = false;
+
+    private Guid _accusedId;
+
+    public void Show( string accuserName, string accusedName, Guid accusedId )
+    {
+        AccuserName = accuserName;
+        AccusedName = accusedName;
+        _accusedId = accusedId;
+        IsVisible = true;
+        Phase = AuditPhase.Voting;
+        HasVoted = false;
+        GuiltyCount = 0;
+        InnocentCount = 0;
+        TimeLeft = 30;
+        StateHasChanged();
+    }
+
+    public void UpdateTally( int guilty, int innocent, int timeLeft )
+    {
+        GuiltyCount = guilty;
+        InnocentCount = innocent;
+        TimeLeft = timeLeft;
+        StateHasChanged();
+    }
+
+    public void ShowResult( bool majorityGuilty, bool wasRugger )
+    {
+        Phase = AuditPhase.Result;
+        WasGuilty = majorityGuilty;
+        WasActuallyRugger = wasRugger;
+        StateHasChanged();
+    }
+
+    public void Hide()
+    {
+        IsVisible = false;
+        Phase = AuditPhase.Hidden;
+        StateHasChanged();
+    }
+
+    private void CastVote( bool guilty )
+    {
+        if ( HasVoted ) return;
+        HasVoted = true;
+
+        var deduction = Scene.GetAllComponents<SocialDeduction>().FirstOrDefault();
+        deduction?.SubmitAuditVote( _accusedId, guilty );
+
+        StateHasChanged();
+    }
+}

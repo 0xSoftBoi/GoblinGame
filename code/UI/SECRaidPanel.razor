@@ -1,0 +1,184 @@
+@using Sandbox;
+@using Sandbox.UI;
+@using System;
+@using System.Linq;
+
+@namespace GoblinChain.UI
+@inherits PanelComponent
+
+<!--
+	SEC Raid Panel — Full-screen overlay when you're being raided.
+	Choose: Shred Documents, Bribe, Blame Another Goblin, or Accept Fate.
+-->
+
+<root class="raid-root">
+	@{
+		var sec = SECSystem.Instance;
+		bool amTarget = sec is not null && sec.RaidActive && IsMyRaid();
+		bool raidHappening = sec is not null && sec.RaidActive;
+	}
+
+	@if ( raidHappening && !amTarget )
+	{
+		<!-- Spectator banner -->
+		<div class="raid-banner">
+			<span class="siren">🚨</span>
+			SEC AGENTS ARE RAIDING @sec.RaidTargetName!
+			<span class="siren">🚨</span>
+		</div>
+	}
+
+	@if ( amTarget && !sec.RaidResolved )
+	{
+		<!-- Target's decision panel -->
+		<div class="raid-overlay">
+			<div class="raid-frame">
+				<div class="raid-title">🚨 YOU'RE BEING RAIDED 🚨</div>
+				<div class="raid-subtitle">SEC agents are at your desk. You have @sec.RaidTimer.ToString("F0") seconds.</div>
+
+				<div class="raid-timer">
+					<div class="raid-timer-fill" style="width: @((sec.RaidTimer / 15f * 100).ToString("F0"))%"></div>
+				</div>
+
+				<div class="raid-choices">
+					<div class="raid-choice shred" onclick="@(() => Choose(RaidAction.ShredDocuments, Guid.Empty))">
+						<div class="rc-icon">📄</div>
+						<div class="rc-title">SHRED DOCUMENTS</div>
+						<div class="rc-desc">Destroy the evidence. Fine is halved.</div>
+					</div>
+
+					<div class="raid-choice bribe" onclick="@(() => Choose(RaidAction.Bribe, Guid.Empty))">
+						<div class="rc-icon">💰</div>
+						<div class="rc-title">BRIBE (2000 GBC)</div>
+						<div class="rc-desc">70% chance to walk free. 30% chance of double fine.</div>
+					</div>
+
+					<div class="raid-choice blame" onclick="@ToggleBlameMode">
+						<div class="rc-icon">👉</div>
+						<div class="rc-title">BLAME ANOTHER GOBLIN</div>
+						<div class="rc-desc">Point the finger. Only works if they have SEC heat.</div>
+					</div>
+
+					<div class="raid-choice accept" onclick="@(() => Choose(RaidAction.AcceptFate, Guid.Empty))">
+						<div class="rc-icon">⛓️</div>
+						<div class="rc-title">ACCEPT FATE</div>
+						<div class="rc-desc">Take the full 50% fine. At least you kept your dignity.</div>
+					</div>
+				</div>
+
+				@if ( BlameMode )
+				{
+					<div class="blame-picker">
+						<div class="blame-title">PICK YOUR SCAPEGOAT:</div>
+						@foreach ( var p in GetOtherPlayers() )
+						{
+							var pid = p.Id;
+							<div class="blame-option" onclick="@(() => Choose(RaidAction.BlameAnother, pid))">
+								@p.Network.Owner?.DisplayName
+							</div>
+						}
+					</div>
+				}
+			</div>
+		</div>
+	}
+</root>
+
+@code
+{
+	private bool BlameMode { get; set; } = false;
+
+	private bool IsMyRaid()
+	{
+		var sec = SECSystem.Instance;
+		if ( sec is null ) return false;
+
+		var localPlayer = Scene.GetAllComponents<GoblinPlayer>()
+			.FirstOrDefault( p => !p.IsProxy );
+		return localPlayer is not null && localPlayer.Id == sec.RaidTargetId;
+	}
+
+	private void Choose( RaidAction action, Guid blameTarget )
+	{
+		SECSystem.Instance?.SubmitRaidResponse( (int)action, blameTarget );
+		BlameMode = false;
+	}
+
+	private void ToggleBlameMode()
+	{
+		BlameMode = !BlameMode;
+	}
+
+	private System.Collections.Generic.List<GoblinPlayer> GetOtherPlayers()
+	{
+		var localPlayer = Scene.GetAllComponents<GoblinPlayer>()
+			.FirstOrDefault( p => !p.IsProxy );
+		return Scene.GetAllComponents<GoblinPlayer>()
+			.Where( p => p != localPlayer )
+			.ToList();
+	}
+}
+
+<style>
+	.raid-banner {
+		position: absolute; top: 0; left: 0; right: 0;
+		background: rgba(255, 0, 0, 0.8); color: white;
+		text-align: center; padding: 12px; font-family: Consolas, monospace;
+		font-size: 16px; font-weight: bold; pointer-events: none;
+		animation: flash 0.5s ease-in-out infinite alternate;
+	}
+	.siren { font-size: 20px; }
+
+	.raid-overlay {
+		position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+		background: rgba(50, 0, 0, 0.85);
+		display: flex; align-items: center; justify-content: center;
+		pointer-events: all;
+	}
+
+	.raid-frame {
+		width: 650px; background: rgba(20, 0, 0, 0.95);
+		border: 3px solid #ff0000; border-radius: 12px;
+		padding: 24px; font-family: Consolas, monospace; color: white;
+	}
+
+	.raid-title {
+		font-size: 24px; font-weight: bold; text-align: center; color: #ff4444;
+		margin-bottom: 8px;
+	}
+	.raid-subtitle { text-align: center; font-size: 12px; opacity: 0.8; margin-bottom: 12px; }
+
+	.raid-timer {
+		height: 8px; background: rgba(255, 255, 255, 0.1); border-radius: 4px;
+		margin-bottom: 16px; overflow: hidden;
+	}
+	.raid-timer-fill { height: 100%; background: #ff4444; transition: width 0.5s linear; }
+
+	.raid-choices { display: flex; gap: 10px; flex-wrap: wrap; }
+
+	.raid-choice {
+		flex: 1; min-width: 130px; padding: 14px; border-radius: 8px;
+		cursor: pointer; text-align: center; transition: all 0.2s;
+	}
+	.raid-choice:hover { transform: scale(1.05); }
+
+	.shred { border: 2px solid #ffaa00; background: rgba(255, 170, 0, 0.1); }
+	.bribe { border: 2px solid #00ff41; background: rgba(0, 255, 65, 0.1); }
+	.blame { border: 2px solid #ff8800; background: rgba(255, 136, 0, 0.1); }
+	.accept { border: 2px solid #888; background: rgba(100, 100, 100, 0.1); }
+
+	.rc-icon { font-size: 28px; margin-bottom: 6px; }
+	.rc-title { font-weight: bold; font-size: 11px; margin-bottom: 4px; }
+	.rc-desc { font-size: 10px; opacity: 0.7; line-height: 1.3; }
+
+	.blame-picker {
+		margin-top: 12px; padding: 12px;
+		border: 1px solid #ff8800; border-radius: 8px;
+	}
+	.blame-title { font-size: 12px; font-weight: bold; color: #ff8800; margin-bottom: 8px; }
+	.blame-option {
+		padding: 8px; border: 1px solid rgba(255, 136, 0, 0.3); border-radius: 4px;
+		cursor: pointer; margin-bottom: 4px; font-size: 12px;
+	}
+	.blame-option:hover { background: rgba(255, 136, 0, 0.2); }
+</style>

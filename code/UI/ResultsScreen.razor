@@ -1,0 +1,239 @@
+@using Sandbox;
+@using Sandbox.UI;
+@using System.Linq;
+
+@namespace GoblinChain.UI
+@inherits PanelComponent
+
+<root class="results @(IsVisible ? "visible" : "hidden")">
+
+	<div class="results-card">
+		<!-- Header -->
+		<div class="results-header">
+			<div class="results-title">MATCH COMPLETE</div>
+			<div class="results-subtitle">Round @MaxRounds / @MaxRounds</div>
+		</div>
+
+		<!-- Winner Spotlight -->
+		@if ( Players.Count > 0 )
+		{
+			<div class="winner-spotlight">
+				<div class="winner-crown">◆</div>
+				<div class="winner-label">@WinnerTitle</div>
+				<div class="winner-name">@Players[0].Name</div>
+				<div class="winner-balance">@Players[0].Balance.ToString("N0") GBC</div>
+			</div>
+		}
+
+		<!-- Full Scoreboard -->
+		<div class="scoreboard">
+			<div class="sb-header-row">
+				<span class="sb-col rank">RANK</span>
+				<span class="sb-col name">PLAYER</span>
+				<span class="sb-col stat">MINED</span>
+				<span class="sb-col stat">RIGS</span>
+				<span class="sb-col balance">FINAL GBC</span>
+			</div>
+
+			@{ int rank = 0; }
+			@foreach ( var p in Players )
+			{
+				rank++;
+				<div class="sb-row @(rank == 1 ? "first" : "") @(p.IsLocal ? "local" : "")">
+					<span class="sb-col rank">
+						@(rank == 1 ? "◆" : rank == 2 ? "◇" : rank == 3 ? "○" : $"#{rank}")
+					</span>
+					<span class="sb-col name">@p.Name</span>
+					<span class="sb-col stat">@p.TotalMined</span>
+					<span class="sb-col stat">@p.Rigs</span>
+					<span class="sb-col balance">@p.Balance.ToString("N0")</span>
+				</div>
+			}
+		</div>
+
+		<!-- Stats Summary -->
+		<div class="stats-row">
+			<div class="stat-block">
+				<span class="stat-value">@TotalGBCMined.ToString("N0")</span>
+				<span class="stat-label">TOTAL GBC MINED</span>
+			</div>
+			<div class="stat-block">
+				<span class="stat-value">@TotalTradesCompleted</span>
+				<span class="stat-label">TRADES COMPLETED</span>
+			</div>
+			<div class="stat-block">
+				<span class="stat-value">@TotalRigsDestroyed</span>
+				<span class="stat-label">RIGS DESTROYED</span>
+			</div>
+		</div>
+
+		<!-- Play Again -->
+		<div class="results-footer">
+			<div class="footer-hint">Next match starting in @CountdownSeconds...</div>
+		</div>
+	</div>
+
+</root>
+
+<style>
+.results {
+	position: absolute;
+	left: 0; top: 0; right: 0; bottom: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: rgba(0, 0, 0, 0.8);
+	font-family: 'Consolas', monospace;
+	pointer-events: all;
+	transition: opacity 0.5s;
+}
+.results.hidden { opacity: 0; pointer-events: none; }
+.results.visible { opacity: 1; }
+
+.results-card {
+	background: rgba(5, 5, 20, 0.97);
+	border: 1px solid #ffcc00;
+	border-radius: 8px;
+	padding: 0;
+	width: 560px;
+	overflow: hidden;
+}
+
+.results-header {
+	background: rgba(255, 204, 0, 0.08);
+	border-bottom: 1px solid #333;
+	padding: 16px 24px;
+	text-align: center;
+}
+.results-title {
+	font-size: 22px;
+	font-weight: bold;
+	color: #ffcc00;
+	letter-spacing: 6px;
+}
+.results-subtitle { font-size: 11px; color: #555; margin-top: 2px; }
+
+/* Winner */
+.winner-spotlight {
+	text-align: center;
+	padding: 24px 20px 20px;
+	border-bottom: 1px solid #222;
+}
+.winner-crown { font-size: 32px; color: #ffcc00; margin-bottom: 4px; }
+.winner-label { font-size: 10px; color: #555; letter-spacing: 4px; }
+.winner-name {
+	font-size: 36px;
+	font-weight: bold;
+	color: #ffcc00;
+	text-shadow: 0 0 30px rgba(255, 204, 0, 0.3);
+	margin: 4px 0;
+}
+.winner-balance { font-size: 20px; color: #00ff88; }
+
+/* Scoreboard */
+.scoreboard { padding: 12px 20px; }
+
+.sb-header-row {
+	display: flex;
+	padding: 6px 0;
+	border-bottom: 1px solid #222;
+	margin-bottom: 4px;
+}
+.sb-header-row .sb-col {
+	font-size: 9px;
+	color: #444;
+	letter-spacing: 2px;
+}
+
+.sb-row {
+	display: flex;
+	padding: 6px 4px;
+	border-radius: 3px;
+}
+.sb-row.first {
+	background: rgba(255, 204, 0, 0.06);
+}
+.sb-row.local {
+	border-left: 2px solid #00ff88;
+	padding-left: 6px;
+}
+
+.sb-col { font-size: 13px; color: #aaa; }
+.sb-col.rank { min-width: 40px; color: #555; }
+.sb-col.name { flex: 1; color: #ccc; }
+.sb-col.stat { min-width: 60px; text-align: right; color: #777; }
+.sb-col.balance { min-width: 80px; text-align: right; color: #ffcc00; font-weight: bold; }
+.first .sb-col.name { color: #ffcc00; }
+.first .sb-col.rank { color: #ffcc00; }
+
+/* Stats */
+.stats-row {
+	display: flex;
+	justify-content: space-around;
+	padding: 16px 20px;
+	border-top: 1px solid #222;
+}
+.stat-block { text-align: center; }
+.stat-value { font-size: 18px; color: #00ff88; font-weight: bold; display: block; }
+.stat-label { font-size: 9px; color: #444; letter-spacing: 2px; }
+
+/* Footer */
+.results-footer {
+	padding: 12px 20px;
+	border-top: 1px solid #222;
+	text-align: center;
+}
+.footer-hint { font-size: 12px; color: #444; }
+</style>
+
+@code
+{
+	public record PlayerResult( string Name, float Balance, int TotalMined, int Rigs, bool IsLocal );
+
+	public bool IsVisible { get; set; } = false;
+	public int MaxRounds { get; set; } = 5;
+	public int CountdownSeconds { get; set; } = 15;
+	public float TotalGBCMined { get; set; }
+	public int TotalTradesCompleted { get; set; }
+	public int TotalRigsDestroyed { get; set; }
+	public string WinnerTitle { get; set; } = "THE ULTIMATE GOBLIN";
+	public List<PlayerResult> Players { get; set; } = new();
+
+	protected override void OnUpdate()
+	{
+		var state = GameStateManager.Instance;
+		if ( state is null ) return;
+
+		bool shouldShow = state.CurrentPhase == GamePhase.Results;
+		IsVisible = shouldShow;
+
+		if ( !shouldShow ) return;
+
+		MaxRounds = state.MaxRounds;
+		CountdownSeconds = (int)state.PhaseTimeRemaining;
+
+		// Build scoreboard
+		Players = Scene.GetAllComponents<CryptoWallet>()
+			.Select( w => new PlayerResult(
+				w.Network.Owner?.DisplayName ?? "???",
+				w.GoblinCoin,
+				w.TotalMined,
+				w.MiningRigs,
+				!w.IsProxy
+			) )
+			.OrderByDescending( p => p.Balance )
+			.ToList();
+
+		// Aggregate stats
+		TotalGBCMined = Players.Sum( p => p.TotalMined );
+
+		// Compute lore-driven winner title
+		if ( Players.Count >= 2 )
+		{
+			float runnerUp = Players.Count > 1 ? Players[1].Balance : 0f;
+			var market = Scene.GetAllComponents<CryptoMarket>().FirstOrDefault();
+			bool survivedCrash = market is not null && market.IsCrashing;
+			WinnerTitle = GameLore.GetWinnerTitle( Players[0].Balance, runnerUp, Players[0].Rigs, survivedCrash );
+		}
+	}
+}

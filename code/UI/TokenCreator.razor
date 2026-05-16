@@ -1,0 +1,194 @@
+@using Sandbox;
+@using Sandbox.UI;
+@using System;
+
+@namespace GoblinChain.UI
+@inherits PanelComponent
+
+<!--
+	Token Creator — Opens during Create (Mining) phase.
+	Name your shitcoin, pick a ticker, choose an icon, launch it.
+-->
+
+<root class="creator-root @(IsOpen ? "open" : "closed")">
+	@if ( IsOpen )
+	{
+		<div class="creator-frame">
+			<div class="creator-title">🪙 TOKEN CREATOR</div>
+			<div class="creator-subtitle">Launch your meme coin into the Underhive</div>
+
+			<!-- Token Name -->
+			<div class="field">
+				<label>TOKEN NAME:</label>
+				<TextEntry @ref="NameEntry" Text="@TokenName" MaxLength=24 class="text-input" />
+			</div>
+
+			<!-- Ticker -->
+			<div class="field">
+				<label>TICKER (3-5 chars):</label>
+				<TextEntry @ref="TickerEntry" Text="@Ticker" MaxLength=5 class="text-input ticker-input" />
+			</div>
+
+			<!-- Icon -->
+			<div class="field">
+				<label>ICON:</label>
+				<div class="icon-grid">
+					@for ( int i = 0; i < Icons.Length; i++ )
+					{
+						var idx = i;
+						<div class="icon-option @(SelectedIcon == idx ? "selected" : "")"
+							onclick="@(() => SelectedIcon = idx)">
+							@Icons[idx]
+						</div>
+					}
+				</div>
+			</div>
+
+			<!-- Name Hype Preview -->
+			<div class="hype-preview">
+				<span>NAME HYPE: </span>
+				<span class="hype-bar">@GetHypeBar()</span>
+				<span class="hype-value">@GetHypeValue()</span>
+			</div>
+
+			<!-- Cost -->
+			<div class="cost-line">
+				Cost: <span class="cost-amount">50 GBC</span>
+			</div>
+
+			<!-- Launch button -->
+			<div class="launch-button" onclick="@DoLaunch">
+				🚀 LAUNCH TOKEN
+			</div>
+
+			<div class="creator-tip">
+				Pro tip: meme names get more hype. ALL CAPS = bonus points.
+			</div>
+		</div>
+	}
+</root>
+
+@code
+{
+	public bool IsOpen { get; set; } = false;
+
+	private string TokenName { get; set; } = "";
+	private string Ticker { get; set; } = "";
+	private int SelectedIcon { get; set; } = 0;
+	private TextEntry NameEntry;
+	private TextEntry TickerEntry;
+
+	private static readonly string[] Icons = new[]
+	{
+		"🪙", "💎", "🔥", "🚀", "🦍", "🐸", "👑", "⚡",
+		"🌙", "💀", "🎰", "🧪"
+	};
+
+	public void Show()
+	{
+		IsOpen = true;
+		TokenName = "";
+		Ticker = "";
+		SelectedIcon = 0;
+	}
+
+	public void Hide()
+	{
+		IsOpen = false;
+	}
+
+	private string GetHypeBar()
+	{
+		float hype = CalculateHype();
+		int bars = (int)(hype * 10);
+		return new string( '█', bars ) + new string( '░', 10 - bars );
+	}
+
+	private string GetHypeValue()
+	{
+		return $"{CalculateHype() * 100:F0}%";
+	}
+
+	private float CalculateHype()
+	{
+		if ( string.IsNullOrWhiteSpace( TokenName ) ) return 0.5f;
+
+		float hype = 0.5f;
+		var lower = TokenName.ToLower();
+
+		string[] hypeWords = { "moon", "doge", "pepe", "elon", "inu", "safe", "rocket",
+			"diamond", "ape", "chad", "giga", "mega", "pump", "king", "god" };
+		foreach ( var w in hypeWords )
+			if ( lower.Contains( w ) ) hype += 0.15f;
+
+		if ( TokenName == TokenName.ToUpper() && TokenName.Length > 2 ) hype += 0.2f;
+		if ( TokenName.Length <= 5 ) hype += 0.1f;
+
+		return MathF.Min( 1f, hype );
+	}
+
+	private void DoLaunch()
+	{
+		if ( string.IsNullOrWhiteSpace( TokenName ) ) return;
+
+		var tokenSys = TokenSystem.Instance;
+		tokenSys?.RequestCreateToken( TokenName, Ticker, SelectedIcon );
+
+		IsOpen = false;
+	}
+}
+
+<style>
+	.creator-root { position: absolute; left: 50%; top: 50%; transform: translateXY(-50%, -50%); pointer-events: all; }
+	.creator-root.closed { display: none; }
+
+	.creator-frame {
+		width: 420px;
+		background-color: rgba(0, 10, 0, 0.95);
+		border: 2px solid #ffaa00;
+		border-radius: 12px;
+		padding: 20px;
+		font-family: Consolas, monospace;
+		color: #ffaa00;
+	}
+
+	.creator-title { font-size: 20px; font-weight: bold; text-align: center; }
+	.creator-subtitle { font-size: 11px; text-align: center; opacity: 0.6; margin-bottom: 16px; }
+
+	.field { margin-bottom: 12px; }
+	.field label { font-size: 10px; font-weight: bold; display: block; margin-bottom: 4px; }
+
+	.text-input {
+		width: 100%; background: rgba(0, 20, 0, 0.8); border: 1px solid #ffaa00;
+		color: #ffaa00; padding: 8px; font-family: Consolas, monospace; font-size: 14px;
+	}
+	.ticker-input { text-transform: uppercase; }
+
+	.icon-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+	.icon-option {
+		width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+		border: 1px solid rgba(255, 170, 0, 0.3); border-radius: 6px; cursor: pointer;
+		font-size: 20px;
+	}
+	.icon-option:hover { background-color: rgba(255, 170, 0, 0.1); }
+	.icon-option.selected { background-color: rgba(255, 170, 0, 0.3); border-color: #ffaa00; }
+
+	.hype-preview {
+		padding: 8px; border: 1px solid rgba(255, 170, 0, 0.3); border-radius: 6px;
+		font-size: 12px; margin-bottom: 8px;
+	}
+	.hype-bar { color: #00ff41; letter-spacing: 2px; }
+	.hype-value { float: right; }
+
+	.cost-line { text-align: center; font-size: 12px; margin-bottom: 12px; }
+	.cost-amount { color: #ff4444; font-weight: bold; }
+
+	.launch-button {
+		text-align: center; padding: 12px; background-color: rgba(255, 170, 0, 0.2);
+		border: 2px solid #ffaa00; border-radius: 8px; cursor: pointer;
+		font-weight: bold; font-size: 16px; margin-bottom: 8px;
+	}
+	.launch-button:hover { background-color: rgba(255, 170, 0, 0.4); }
+
+	.creator-tip { font-size: 10px; text-align: center; opacity: 0.4; }
+</style>

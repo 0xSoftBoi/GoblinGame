@@ -1,0 +1,571 @@
+@using Sandbox;
+@using Sandbox.UI;
+@using System.Linq;
+
+@namespace GoblinChain.UI
+@inherits PanelComponent
+
+<root class="goblin-hud">
+
+	<!-- ═══ TOP BAR: Phase + Timer ═══ -->
+	<div class="top-bar">
+		<div class="phase-badge @PhaseClass">
+			<span class="phase-label">@CurrentPhase</span>
+		</div>
+		<div class="timer-block">
+			<span class="timer">@FormatTime( TimeRemaining )</span>
+			<span class="round-info">Round @CurrentRound / @MaxRounds</span>
+		</div>
+	</div>
+
+	<!-- ═══ HEADLINE TICKER ═══ -->
+	@if ( !string.IsNullOrEmpty( Headline ) )
+	{
+		<div class="headline @HeadlineClass">
+			<span>@Headline</span>
+		</div>
+	}
+
+	<!-- ═══ WALLET (bottom-left) ═══ -->
+	<div class="wallet">
+		<div class="wallet-header">WALLET</div>
+		<div class="wallet-main">
+			<span class="gbc-icon">◆</span>
+			<span class="gbc-balance @BalanceTrendClass">@DisplayBalance.ToString("N1")</span>
+			<span class="gbc-label">GBC</span>
+		</div>
+		<div class="wallet-row">
+			<span class="wlabel">HASH</span>
+			<span class="wvalue hash">@HashRate.ToString("N1") H/s</span>
+		</div>
+		<div class="wallet-row">
+			<span class="wlabel">RIGS</span>
+			<span class="wvalue">@RigCount</span>
+		</div>
+		<div class="wallet-row">
+			<span class="wlabel">MINED</span>
+			<span class="wvalue">@TotalMined</span>
+		</div>
+		<div class="wallet-row">
+			<span class="wlabel">GBC PRICE</span>
+			<span class="wvalue price">$@GbcPrice.ToString("F3")</span>
+		</div>
+	</div>
+
+	<!-- ═══ LEADERBOARD (top-right) ═══ -->
+	<div class="leaderboard">
+		<div class="lb-header">LEADERBOARD</div>
+		@{ int rank = 0; }
+		@foreach ( var p in Players )
+		{
+			rank++;
+			<div class="lb-row @(p.IsLocal ? "local" : "")">
+				<span class="lb-rank">#@rank</span>
+				<span class="lb-name">@p.Name</span>
+				<span class="lb-bal">@p.Balance.ToString("N0")</span>
+			</div>
+		}
+	</div>
+
+	<!-- ═══ PHASE HINT (center-bottom) ═══ -->
+	<div class="phase-hint">
+		<span>@PhaseHint</span>
+	</div>
+
+	<!-- ═══ INTERACTION PROMPT ═══ -->
+	@if ( ShowInteractPrompt )
+	{
+		<div class="interact-prompt">
+			<span class="key">[E]</span> @InteractLabel
+		</div>
+	}
+
+	<!-- ═══ WINNER OVERLAY ═══ -->
+	@if ( ShowWinner )
+	{
+		<div class="winner-overlay">
+			<div class="winner-card">
+				<div class="winner-title">@WinnerTitle</div>
+				<div class="winner-name">@WinnerName</div>
+				<div class="winner-score">@WinnerBalance.ToString("N0") GBC</div>
+			</div>
+		</div>
+	}
+
+</root>
+
+<style>
+/* ═══════════════════════════════════════
+   GOBLIN CHAIN HUD — Neon Terminal Style
+   ═══════════════════════════════════════ */
+
+.goblin-hud {
+	position: absolute;
+	left: 0; top: 0; right: 0; bottom: 0;
+	font-family: 'Consolas', 'Courier New', monospace;
+	pointer-events: none;
+	color: white;
+}
+
+/* ─── TOP BAR ─── */
+
+.top-bar {
+	position: absolute;
+	top: 12px;
+	left: 50%;
+	transform: translateX(-50%);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	background: rgba(0, 0, 0, 0.9);
+	border: 1px solid #333;
+	border-radius: 4px;
+	padding: 8px 32px 6px;
+	min-width: 240px;
+}
+
+.phase-badge {
+	padding: 2px 16px;
+	border-radius: 2px;
+	margin-bottom: 4px;
+	border: 1px solid #00ff88;
+}
+.phase-badge.mining  { border-color: #00ff88; }
+.phase-badge.trading { border-color: #ffcc00; }
+.phase-badge.chaos   { border-color: #ff4444; }
+.phase-badge.waiting { border-color: #555; }
+.phase-badge.pregame { border-color: #888; }
+.phase-badge.results { border-color: #aa44ff; }
+
+.phase-label {
+	font-size: 16px;
+	font-weight: bold;
+	letter-spacing: 4px;
+	text-transform: uppercase;
+	color: #00ff88;
+}
+.chaos .phase-label   { color: #ff4444; }
+.trading .phase-label { color: #ffcc00; }
+.results .phase-label { color: #aa44ff; }
+.waiting .phase-label { color: #555; }
+
+.timer {
+	font-size: 38px;
+	font-weight: bold;
+	color: white;
+	letter-spacing: 2px;
+}
+
+.round-info {
+	font-size: 11px;
+	color: #555;
+	letter-spacing: 1px;
+}
+
+.timer-block {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+/* ─── HEADLINE ─── */
+
+.headline {
+	position: absolute;
+	top: 110px;
+	left: 50%;
+	transform: translateX(-50%);
+	background: rgba(0, 0, 0, 0.85);
+	padding: 6px 24px;
+	border-radius: 2px;
+	font-size: 13px;
+	color: #aaa;
+	border: 1px solid #333;
+	max-width: 600px;
+	text-align: center;
+	white-space: nowrap;
+}
+.headline.crash { color: #ff4444; border-color: #ff4444; }
+.headline.moon  { color: #00ff88; border-color: #00ff88; }
+
+/* ─── WALLET ─── */
+
+.wallet {
+	position: absolute;
+	bottom: 20px;
+	left: 20px;
+	background: rgba(0, 0, 0, 0.9);
+	border: 1px solid #333;
+	border-radius: 4px;
+	padding: 12px 16px;
+	min-width: 180px;
+}
+
+.wallet-header {
+	font-size: 10px;
+	color: #555;
+	letter-spacing: 3px;
+	margin-bottom: 6px;
+	border-bottom: 1px solid #222;
+	padding-bottom: 4px;
+}
+
+.wallet-main {
+	display: flex;
+	align-items: baseline;
+	gap: 6px;
+	margin-bottom: 8px;
+}
+
+.gbc-icon {
+	color: #ffcc00;
+	font-size: 18px;
+}
+
+.gbc-balance {
+	font-size: 28px;
+	font-weight: bold;
+	color: #ffcc00;
+	transition: color 0.3s;
+}
+.gbc-balance.up   { color: #00ff88; }
+.gbc-balance.down { color: #ff4444; }
+
+.gbc-label {
+	font-size: 12px;
+	color: #997700;
+}
+
+.wallet-row {
+	display: flex;
+	justify-content: space-between;
+	padding: 2px 0;
+}
+
+.wlabel {
+	font-size: 10px;
+	color: #555;
+	letter-spacing: 1px;
+}
+
+.wvalue {
+	font-size: 13px;
+	color: #ccc;
+}
+.wvalue.hash  { color: #00ff88; }
+.wvalue.price { color: #ffcc00; }
+
+/* ─── LEADERBOARD ─── */
+
+.leaderboard {
+	position: absolute;
+	top: 12px;
+	right: 20px;
+	background: rgba(0, 0, 0, 0.9);
+	border: 1px solid #333;
+	border-radius: 4px;
+	padding: 10px 14px;
+	min-width: 200px;
+}
+
+.lb-header {
+	font-size: 10px;
+	color: #555;
+	letter-spacing: 3px;
+	margin-bottom: 6px;
+	border-bottom: 1px solid #222;
+	padding-bottom: 4px;
+}
+
+.lb-row {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 3px 4px;
+	gap: 8px;
+	font-size: 13px;
+}
+.lb-row.local {
+	background: rgba(0, 255, 136, 0.08);
+	border-left: 2px solid #00ff88;
+	padding-left: 6px;
+}
+
+.lb-rank { color: #555; font-size: 11px; min-width: 24px; }
+.lb-name { color: #ccc; flex: 1; overflow: hidden; text-overflow: ellipsis; }
+.lb-bal  { color: #ffcc00; font-weight: bold; }
+
+/* ─── PHASE HINT ─── */
+
+.phase-hint {
+	position: absolute;
+	bottom: 20px;
+	left: 50%;
+	transform: translateX(-50%);
+	font-size: 13px;
+	color: #555;
+	letter-spacing: 1px;
+}
+
+/* ─── INTERACT PROMPT ─── */
+
+.interact-prompt {
+	position: absolute;
+	bottom: 50%;
+	left: 50%;
+	transform: translate(-50%, 60px);
+	font-size: 16px;
+	color: white;
+	background: rgba(0, 0, 0, 0.8);
+	padding: 6px 16px;
+	border-radius: 3px;
+}
+
+.key {
+	color: #00ff88;
+	font-weight: bold;
+}
+
+/* ─── WINNER OVERLAY ─── */
+
+.winner-overlay {
+	position: absolute;
+	left: 0; top: 0; right: 0; bottom: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: rgba(0, 0, 0, 0.7);
+	pointer-events: all;
+}
+
+.winner-card {
+	text-align: center;
+	background: rgba(10, 10, 30, 0.95);
+	border: 2px solid #ffcc00;
+	padding: 40px 80px;
+	border-radius: 8px;
+}
+
+.winner-title {
+	font-size: 18px;
+	color: #555;
+	letter-spacing: 6px;
+	margin-bottom: 12px;
+}
+
+.winner-name {
+	font-size: 48px;
+	color: #ffcc00;
+	font-weight: bold;
+	text-shadow: 0 0 30px rgba(255, 204, 0, 0.4);
+}
+
+.winner-score {
+	font-size: 24px;
+	color: #00ff88;
+	margin-top: 8px;
+}
+</style>
+
+@code
+{
+	// === Display Data ===
+	public record PlayerInfo( string Name, float Balance, bool IsLocal );
+
+	// State
+	public string CurrentPhase { get; set; } = "WAITING";
+	public float TimeRemaining { get; set; }
+	public int CurrentRound { get; set; } = 1;
+	public int MaxRounds { get; set; } = 5;
+	public float DisplayBalance { get; set; }
+	public float HashRate { get; set; }
+	public int RigCount { get; set; }
+	public int TotalMined { get; set; }
+	public float GbcPrice { get; set; } = 1f;
+	public string Headline { get; set; } = "";
+	public string WinnerName { get; set; } = "";
+	public float WinnerBalance { get; set; }
+	public string WinnerTitle { get; set; } = "THE ULTIMATE GOBLIN";
+	public bool ShowInteractPrompt { get; set; }
+	public string InteractLabel { get; set; } = "Interact";
+	public List<PlayerInfo> Players { get; set; } = new();
+
+	// Trend tracking
+	private float _prevBalance;
+	private float _trendTimer;
+
+	// === Computed CSS classes ===
+
+	public string PhaseClass => CurrentPhase.ToLower() switch
+	{
+		"mining" => "mining",
+		"trading" => "trading",
+		"chaos" => "chaos",
+		"results" => "results",
+		"pregame" => "pregame",
+		_ => "waiting"
+	};
+
+	public string HeadlineClass
+	{
+		get
+		{
+			var market = Scene.GetAllComponents<CryptoMarket>().FirstOrDefault();
+			if ( market is null ) return "";
+			if ( market.IsCrashing ) return "crash";
+			if ( market.IsMooning ) return "moon";
+			return "";
+		}
+	}
+
+	public string BalanceTrendClass
+	{
+		get
+		{
+			if ( _trendTimer > 0f )
+				return DisplayBalance > _prevBalance ? "up" : "down";
+			return "";
+		}
+	}
+
+	public bool ShowWinner =>
+		CurrentPhase == "RESULTS" && !string.IsNullOrEmpty( WinnerName );
+
+	public string PhaseHint => CurrentPhase switch
+	{
+		"MINING" => "[E] Place rigs · Stack hash rate · Ignore the burning smell",
+		"TRADING" => "[T] Trade with players · Trust no one · Especially the ones who say 'trust me'",
+		"CHAOS" => "All EMPs are armed · The Blockchain Council has left the chat",
+		"PREGAME" => "Someone's already arguing about tokenomics...",
+		"RESULTS" => "The blockchain has spoken. No refunds.",
+		_ => "Goblins are filing into Sector 7G..."
+	};
+
+	// === Update Loop ===
+
+	protected override void OnUpdate()
+	{
+		PullGameState();
+		PullLocalWallet();
+		PullMarketData();
+		PullLeaderboard();
+		PullInteraction();
+		UpdateTrend();
+	}
+
+	private void PullGameState()
+	{
+		var state = Scene.GetAllComponents<GameStateManager>().FirstOrDefault();
+		if ( state is null ) return;
+
+		CurrentPhase = state.CurrentPhase.ToString().ToUpper();
+		TimeRemaining = state.PhaseTimeRemaining;
+		CurrentRound = state.CurrentRound;
+		MaxRounds = state.MaxRounds;
+		WinnerName = state.WinnerName;
+	}
+
+	private void PullLocalWallet()
+	{
+		var local = Scene.GetAllComponents<GoblinPlayer>()
+			.FirstOrDefault( p => !p.IsProxy );
+		if ( local is null ) return;
+
+		var w = local.Components.Get<CryptoWallet>();
+		if ( w is null ) return;
+
+		DisplayBalance = w.DisplayBalance;
+		HashRate = w.HashRate;
+		RigCount = w.MiningRigs;
+		TotalMined = w.TotalMined;
+	}
+
+	private void PullMarketData()
+	{
+		var market = Scene.GetAllComponents<CryptoMarket>().FirstOrDefault();
+		if ( market is null ) return;
+
+		GbcPrice = market.GoblinCoinPrice;
+		Headline = market.MarketHeadline;
+	}
+
+	private void PullLeaderboard()
+	{
+		Players = Scene.GetAllComponents<CryptoWallet>()
+			.Select( w => new PlayerInfo(
+				w.Network.Owner?.DisplayName ?? "???",
+				w.GoblinCoin,
+				!w.IsProxy
+			) )
+			.OrderByDescending( p => p.Balance )
+			.Take( 8 )
+			.ToList();
+
+		// Set winner balance for overlay
+		if ( Players.Count > 0 && !string.IsNullOrEmpty( WinnerName ) )
+		{
+			var winner = Players.FirstOrDefault( p => p.Name == WinnerName );
+			if ( winner is not null )
+				WinnerBalance = winner.Balance;
+		}
+	}
+
+	private void PullInteraction()
+	{
+		// Check if player is looking at something interactable
+		var local = Scene.GetAllComponents<GoblinPlayer>()
+			.FirstOrDefault( p => !p.IsProxy );
+		if ( local is null || local.Head is null )
+		{
+			ShowInteractPrompt = false;
+			return;
+		}
+
+		var eyePos = local.Head.Transform.Position;
+		var eyeDir = local.Head.Transform.Rotation.Forward;
+
+		var trace = Scene.Trace
+			.Ray( eyePos, eyePos + eyeDir * 150f )
+			.WithoutTags( "player", "trigger" )
+			.Run();
+
+		if ( trace.Hit && trace.GameObject is not null )
+		{
+			var target = trace.GameObject.Components.Get<IInteractable>()
+				?? trace.GameObject.Parent?.Components.Get<IInteractable>();
+
+			if ( target is not null )
+			{
+				ShowInteractPrompt = true;
+				InteractLabel = target is MiningRig rig
+					? (rig.Durability < rig.MaxDurability ? "Repair Rig" : "Mining Rig")
+					: "Interact";
+				return;
+			}
+		}
+
+		ShowInteractPrompt = false;
+	}
+
+	private void UpdateTrend()
+	{
+		_trendTimer -= Time.Delta;
+
+		float current = DisplayBalance;
+		if ( System.MathF.Abs( current - _prevBalance ) > 1f )
+		{
+			_trendTimer = 1.5f; // Show trend color for 1.5s
+			_prevBalance = current;
+		}
+	}
+
+	// === Helpers ===
+
+	string FormatTime( float s )
+	{
+		if ( s <= 0 ) return "0:00";
+		int m = (int)(s / 60);
+		int sec = (int)(s % 60);
+		return $"{m}:{sec:D2}";
+	}
+}
