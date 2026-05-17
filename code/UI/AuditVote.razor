@@ -227,7 +227,7 @@
         HasVoted = true;
 
         var deduction = Scene.GetAllComponents<SocialDeduction>().FirstOrDefault();
-        deduction?.SubmitAuditVote( _accusedId, guilty );
+        deduction?.CastAuditVote( guilty ? _accusedId : Guid.Empty );
 
         StateHasChanged();
     }

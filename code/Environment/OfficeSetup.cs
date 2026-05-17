@@ -66,6 +66,8 @@ public sealed class OfficeSetup : Component
 		SpawnDecorations();
 		SpawnMarketBoard();
 		SpawnPosters();
+		if ( _spawnedProps.Count < 5 )
+			SpawnCodeBasedProps();
 
 		Log.Info( $"Office spawned: {EraNames[OfficeEra]} ({_spawnedProps.Count} props)" );
 	}
@@ -131,6 +133,7 @@ public sealed class OfficeSetup : Component
 					var chairOffset = row % 2 == 0 ? new Vector3( 0, -40, 0 ) : new Vector3( 0, 40, 0 );
 					var chairPrefab = ChairPrefabs[_rng.Next( ChairPrefabs.Count )];
 					var chair = chairPrefab.Clone( pos + chairOffset, Rotation.FromYaw( _rng.Next( 360 ) ) );
+					EnsurePhysicsProp( chair, 25f );
 					chair.NetworkSpawn();
 					_spawnedProps.Add( chair );
 				}
@@ -140,6 +143,7 @@ public sealed class OfficeSetup : Component
 				{
 					var monPrefab = MonitorPrefabs[_rng.Next( MonitorPrefabs.Count )];
 					var mon = monPrefab.Clone( pos + new Vector3( 0, 0, 35 ), Rotation.Identity );
+					EnsurePhysicsProp( mon, 8f );
 					mon.NetworkSpawn();
 					_spawnedProps.Add( mon );
 				}
@@ -163,6 +167,7 @@ public sealed class OfficeSetup : Component
 		{
 			var cmPos = OfficeCenter + new Vector3( -OfficeWidth * 0.4f, OfficeDepth * 0.4f, 0 );
 			var cm = CoffeeMachinePrefab.Clone( cmPos, Rotation.FromYaw( -45 ) );
+			EnsurePhysicsProp( cm, 35f );
 			cm.NetworkSpawn();
 			_spawnedProps.Add( cm );
 		}
@@ -172,6 +177,7 @@ public sealed class OfficeSetup : Component
 		{
 			var srPos = OfficeCenter + new Vector3( -OfficeWidth * 0.4f, -OfficeDepth * 0.35f, 0 );
 			var sr = ServerRackPrefab.Clone( srPos, Rotation.FromYaw( 180 ) );
+			EnsurePhysicsProp( sr, 120f );
 			sr.NetworkSpawn();
 			_spawnedProps.Add( sr );
 		}
@@ -181,6 +187,7 @@ public sealed class OfficeSetup : Component
 		{
 			var tcPos = OfficeCenter + new Vector3( OfficeWidth * 0.45f, -OfficeDepth * 0.4f, 0 );
 			var tc = TrashCanPrefab.Clone( tcPos, Rotation.Identity );
+			EnsurePhysicsProp( tc, 5f );
 			tc.NetworkSpawn();
 			_spawnedProps.Add( tc );
 		}
@@ -291,5 +298,74 @@ public sealed class OfficeSetup : Component
 			);
 			rb.ApplyImpulse( force );
 		}
+	}
+
+	// ── Helpers ────────────────────────────────────────────────────────
+
+	private void EnsurePhysicsProp( GameObject go, float mass = 20f )
+	{
+		if ( go.Components.Get<PhysicsProp>( FindMode.EverythingInSelf ) is not null ) return;
+
+		if ( go.Components.Get<Rigidbody>( FindMode.EverythingInSelf ) is null )
+		{
+			var rb = go.Components.Create<Rigidbody>();
+			rb.MassOverride = mass;
+		}
+
+		if ( go.Components.Get<BoxCollider>( FindMode.EverythingInSelf ) is null )
+			go.Components.Create<BoxCollider>();
+
+		go.Components.Create<PhysicsProp>().ThrowForce = mass > 80f ? 400f : 700f;
+	}
+
+	/// <summary>
+	/// Spawns simple placeholder props when no prefabs are assigned.
+	/// Ensures the office always has throwable objects for comedy.
+	/// </summary>
+	private void SpawnCodeBasedProps()
+	{
+		// Prop definitions: (name, size, position offset, mass, color)
+		(string name, Vector3 size, Vector3 offset, float mass, Color tint)[] props =
+		{
+			("Chair_A",       new Vector3(40,40,50),  new Vector3(-100,  80, 0),  20f, new Color(0.4f, 0.3f, 0.2f)),
+			("Chair_B",       new Vector3(40,40,50),  new Vector3( 100,  80, 0),  20f, new Color(0.4f, 0.3f, 0.2f)),
+			("Chair_C",       new Vector3(40,40,50),  new Vector3(-100, -80, 0),  20f, new Color(0.35f,0.25f,0.15f)),
+			("Chair_D",       new Vector3(40,40,50),  new Vector3( 100, -80, 0),  20f, new Color(0.35f,0.25f,0.15f)),
+			("Monitor_A",     new Vector3(50, 8,35),  new Vector3(-150,   0,35),   8f, new Color(0.1f, 0.1f, 0.1f)),
+			("Monitor_B",     new Vector3(50, 8,35),  new Vector3( 150,   0,35),   8f, new Color(0.1f, 0.1f, 0.1f)),
+			("CoffeeMachine", new Vector3(30,25,45),  new Vector3(-200, 180, 0),  35f, new Color(0.2f, 0.2f, 0.2f)),
+			("ServerRack",    new Vector3(40,30,100), new Vector3(-200,-180, 0), 120f, new Color(0.3f, 0.3f, 0.35f)),
+			("TrashCan",      new Vector3(25,25,40),  new Vector3( 220,-180, 0),   5f, new Color(0.4f, 0.5f, 0.4f)),
+			("TrashCan_B",    new Vector3(25,25,40),  new Vector3( 220, 180, 0),   5f, new Color(0.4f, 0.5f, 0.4f)),
+			("Keyboard_A",    new Vector3(45,15,5),   new Vector3(-120,  50,36),   3f, new Color(0.15f,0.15f,0.15f)),
+			("Keyboard_B",    new Vector3(45,15,5),   new Vector3( 120, -50,36),   3f, new Color(0.15f,0.15f,0.15f)),
+		};
+
+		foreach ( var (name, size, offset, mass, tint) in props )
+		{
+			var go = Scene.CreateObject();
+			go.Name = name;
+			go.WorldPosition = OfficeCenter + offset;
+			go.Tags.Add( "prop" );
+
+			var renderer = go.Components.Create<ModelRenderer>();
+			renderer.Model = Model.Load( "models/dev/box.vmdl" );
+			renderer.Tint = tint;
+			go.LocalScale = size;
+
+			var collider = go.Components.Create<BoxCollider>();
+			collider.Scale = Vector3.One;
+
+			var rb = go.Components.Create<Rigidbody>();
+			rb.MassOverride = mass;
+
+			var pp = go.Components.Create<PhysicsProp>();
+			pp.ThrowForce = mass > 80f ? 400f : 700f;
+
+			go.NetworkSpawn();
+			_spawnedProps.Add( go );
+		}
+
+		Log.Info( $"[OfficeSetup] Spawned {props.Length} code-based props (no prefabs assigned)" );
 	}
 }

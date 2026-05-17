@@ -100,6 +100,44 @@ public sealed class SECSystem : Component
 		return heat?.Heat ?? 0f;
 	}
 
+	/// <summary>
+	/// Called by GameStateManager at match start to zero all player heat.
+	/// </summary>
+	public void ResetAllHeat()
+	{
+		if ( IsProxy ) return;
+		foreach ( var player in GoblinPlayer.All )
+		{
+			var heat = player.Components.Get<SECHeatComponent>();
+			if ( heat is null ) continue;
+			heat.Heat = 0f;
+			heat.IsBeingRaided = false;
+			heat.WarnCooldown = 0f;
+		}
+		RaidActive = false;
+		RaidResolved = false;
+		RaidTargetId = Guid.Empty;
+		RaidTargetName = "";
+		RaidTimer = 0f;
+	}
+
+	/// <summary>
+	/// Called at Chaos phase start to immediately check if anyone is raid-worthy.
+	/// </summary>
+	public void CheckForRaids()
+	{
+		if ( IsProxy || RaidActive ) return;
+		foreach ( var player in GoblinPlayer.All )
+		{
+			var heat = player.Components.Get<SECHeatComponent>();
+			if ( heat is not null && heat.Heat >= RaidThreshold )
+			{
+				TriggerRaid( player );
+				return;
+			}
+		}
+	}
+
 	// ═══════════════════════════════════════
 	//  RAID
 	// ═══════════════════════════════════════

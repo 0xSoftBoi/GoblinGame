@@ -27,6 +27,7 @@
       "RootNamespace": "GoblinChain",
       "DefineConstants": "SANDBOX;ADDON;DEBUG"
     },
-    "CsProjName": ""
+    "CsProjName": "",
+    "StartScene": "scenes/menu.scene"
   }
 }

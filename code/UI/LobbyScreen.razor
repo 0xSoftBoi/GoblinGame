@@ -1,0 +1,404 @@
+@using Sandbox;
+@using Sandbox.UI;
+@using System.Linq;
+@using System.Collections.Generic;
+
+@namespace GoblinChain.UI
+@inherits PanelComponent
+
+<root class="lobby @(IsVisible ? "visible" : "hidden")">
+
+	<!-- Background -->
+	<div class="lobby-bg"></div>
+
+	<!-- Logo -->
+	<div class="lobby-logo-block">
+		<div class="lobby-logo">GOBLIN CHAIN</div>
+		<div class="lobby-sub">Goblin Stock Market Simulator</div>
+	</div>
+
+	<!-- Player roster -->
+	<div class="lobby-card">
+		<div class="lc-header">
+			<span class="lc-title">LOBBY</span>
+			<span class="lc-count">@Players.Count / 8 GOBLINS</span>
+		</div>
+
+		<div class="player-list">
+			@foreach ( var p in Players )
+			{
+				<div class="player-row @(p.IsHost ? "host" : "")">
+					<span class="pr-icon">@(p.IsHost ? "♜" : "◆")</span>
+					<span class="pr-name">@p.Name</span>
+					<span class="pr-status">@(p.IsHost ? "HOST" : "CONNECTED")</span>
+				</div>
+			}
+		</div>
+
+		<!-- Host controls -->
+		@if ( IsHost )
+		{
+			<div class="host-panel">
+				@if ( Players.Count >= 1 )
+				{
+					<button class="start-btn" onclick="@StartGame">▶ START GAME</button>
+				}
+				else
+				{
+					<div class="waiting-msg">Waiting for players...</div>
+				}
+				<div class="host-note">You are the host · @Players.Count player(s) in lobby</div>
+			</div>
+		}
+		else
+		{
+			<div class="waiting-msg">Waiting for host to start the match...</div>
+		}
+	</div>
+
+	<!-- Goblin Customizer -->
+	@if ( _localPlayer is not null )
+	{
+		<div class="customizer-card">
+			<div class="cust-title">CUSTOMIZE GOBLIN</div>
+
+			<div class="cust-section">
+				<div class="cust-label">SKIN</div>
+				<div class="cust-row">
+					@for ( int i = 0; i < GoblinPlayer.SkinColors.Length; i++ )
+					{
+						int idx = i;
+						var col = GoblinPlayer.SkinColors[i];
+						string hex = $"#{(int)(col.r*255):x2}{(int)(col.g*255):x2}{(int)(col.b*255):x2}";
+						<div class="cust-swatch @(_selectedSkin == idx ? "selected" : "")"
+							 style="background-color: @hex"
+							 title="@GoblinPlayer.SkinNames[idx]"
+							 onclick="@(() => SetSkin(idx))"></div>
+					}
+				</div>
+			</div>
+
+			<div class="cust-section">
+				<div class="cust-label">HAT</div>
+				<div class="cust-row">
+					@for ( int i = 0; i < GoblinPlayer.AccessoryIcons.Length; i++ )
+					{
+						int idx = i;
+						<div class="cust-hat @(_selectedHat == idx ? "selected" : "")"
+							 onclick="@(() => SetHat(idx))">
+							@(i == 0 ? "NONE" : GoblinPlayer.AccessoryIcons[i])
+						</div>
+					}
+				</div>
+			</div>
+		</div>
+	}
+
+	<!-- Tip -->
+	<div class="lobby-tip">@CurrentTip</div>
+
+	<!-- Version -->
+	<div class="lobby-version">@GameVersion.Phase @GameVersion.Current</div>
+
+</root>
+
+<style>
+.lobby {
+	position: absolute;
+	left: 0; top: 0; right: 0; bottom: 0;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	font-family: 'Consolas', monospace;
+	pointer-events: all;
+	transition: opacity 0.4s;
+}
+.lobby.hidden { opacity: 0; pointer-events: none; }
+.lobby.visible { opacity: 1; }
+
+.lobby-bg {
+	position: absolute;
+	left: 0; top: 0; right: 0; bottom: 0;
+	background: linear-gradient(160deg, #050510 0%, #0a0a2e 40%, #0d0520 100%);
+	z-index: -1;
+}
+
+/* ─── Logo ─── */
+.lobby-logo-block {
+	text-align: center;
+	margin-bottom: 36px;
+}
+.lobby-logo {
+	font-size: 64px;
+	font-weight: bold;
+	color: #00ff88;
+	letter-spacing: 8px;
+	text-shadow: 0 0 40px rgba(0,255,136,0.25);
+	line-height: 1;
+}
+.lobby-sub {
+	font-size: 13px;
+	color: #444;
+	letter-spacing: 4px;
+	margin-top: 6px;
+}
+
+/* ─── Card ─── */
+.lobby-card {
+	background: rgba(5, 5, 20, 0.95);
+	border: 1px solid #1a1a3a;
+	border-radius: 8px;
+	width: 420px;
+	overflow: hidden;
+}
+
+.lc-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 14px 20px;
+	background: rgba(0, 255, 136, 0.04);
+	border-bottom: 1px solid #1a1a3a;
+}
+.lc-title {
+	font-size: 11px;
+	color: #444;
+	letter-spacing: 3px;
+}
+.lc-count {
+	font-size: 11px;
+	color: #00ff88;
+	letter-spacing: 1px;
+}
+
+/* ─── Player list ─── */
+.player-list {
+	padding: 8px 12px;
+	min-height: 120px;
+}
+
+.player-row {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 8px 8px;
+	border-radius: 3px;
+}
+.player-row.host {
+	background: rgba(0, 255, 136, 0.04);
+}
+
+.pr-icon {
+	font-size: 14px;
+	color: #333;
+	min-width: 18px;
+}
+.player-row.host .pr-icon { color: #00ff88; }
+
+.pr-name {
+	flex: 1;
+	font-size: 15px;
+	color: #ccc;
+}
+.player-row.host .pr-name { color: #00ff88; }
+
+.pr-status {
+	font-size: 9px;
+	color: #333;
+	letter-spacing: 2px;
+}
+.player-row.host .pr-status { color: #00ff88; opacity: 0.6; }
+
+/* ─── Host controls ─── */
+.host-panel {
+	padding: 16px 20px;
+	border-top: 1px solid #1a1a3a;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 10px;
+}
+
+.start-btn {
+	width: 100%;
+	padding: 14px 0;
+	font-size: 16px;
+	font-weight: bold;
+	letter-spacing: 4px;
+	font-family: 'Consolas', monospace;
+	background: rgba(0, 255, 136, 0.08);
+	color: #00ff88;
+	border: 1px solid #00ff88;
+	border-radius: 4px;
+	cursor: pointer;
+	transition: all 0.15s;
+}
+.start-btn:hover {
+	background: rgba(0, 255, 136, 0.2);
+	text-shadow: 0 0 10px rgba(0, 255, 136, 0.4);
+}
+
+.host-note {
+	font-size: 10px;
+	color: #333;
+	letter-spacing: 1px;
+}
+
+.waiting-msg {
+	padding: 16px 20px;
+	text-align: center;
+	font-size: 12px;
+	color: #444;
+	letter-spacing: 1px;
+	border-top: 1px solid #1a1a3a;
+}
+
+/* ─── Footer ─── */
+.lobby-tip {
+	margin-top: 28px;
+	font-size: 12px;
+	color: #222;
+	letter-spacing: 1px;
+	max-width: 420px;
+	text-align: center;
+}
+.lobby-version {
+	position: absolute;
+	bottom: 16px;
+	right: 20px;
+	font-size: 10px;
+	color: #222;
+	letter-spacing: 2px;
+}
+
+/* ─── Customizer ─── */
+.customizer-card {
+	background: rgba(5, 5, 20, 0.95);
+	border: 1px solid #1a1a3a;
+	border-radius: 8px;
+	width: 420px;
+	padding: 14px 20px;
+	margin-top: 12px;
+}
+
+.cust-title {
+	font-size: 9px;
+	letter-spacing: 3px;
+	color: #444;
+	margin-bottom: 12px;
+}
+
+.cust-section {
+	margin-bottom: 10px;
+}
+
+.cust-label {
+	font-size: 9px;
+	color: #333;
+	letter-spacing: 2px;
+	margin-bottom: 6px;
+}
+
+.cust-row {
+	display: flex;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+
+.cust-swatch {
+	width: 32px;
+	height: 32px;
+	border-radius: 4px;
+	cursor: pointer;
+	border: 2px solid transparent;
+	transition: border-color 0.1s;
+}
+.cust-swatch:hover { border-color: #555; }
+.cust-swatch.selected { border-color: #00ff88; }
+
+.cust-hat {
+	padding: 6px 10px;
+	font-size: 14px;
+	border: 1px solid #1a1a3a;
+	border-radius: 4px;
+	cursor: pointer;
+	color: #555;
+	min-width: 36px;
+	text-align: center;
+	transition: all 0.1s;
+}
+.cust-hat:hover { border-color: #333; color: #aaa; }
+.cust-hat.selected { border-color: #00ff88; color: #00ff88; background: rgba(0,255,136,0.06); }
+</style>
+
+@code
+{
+	public record PlayerEntry( string Name, bool IsHost );
+
+	public bool IsVisible { get; set; } = false;
+	public List<PlayerEntry> Players { get; set; } = new();
+	public string CurrentTip { get; set; } = GameLore.GetRandomTip();
+
+	private float _tipTimer;
+	private bool _isHost;
+
+	public bool IsHost => _isHost;
+
+	private GoblinPlayer _localPlayer;
+	private int _selectedSkin = 0;
+	private int _selectedHat = 0;
+
+	protected override void OnUpdate()
+	{
+		var state = GameStateManager.Instance;
+		IsVisible = state is null || state.CurrentPhase == GamePhase.WaitingForPlayers;
+
+		if ( !IsVisible ) return;
+
+		// Determine if local client is host
+		_isHost = state is not null && !state.IsProxy;
+
+		// Build player list from connected GoblinPlayers
+		// Host = the player whose GoblinPlayer is not a proxy AND state is not proxy
+		Players = GoblinPlayer.All
+			.Select( p => new PlayerEntry(
+				p.Network.Owner?.DisplayName ?? "???",
+				!p.IsProxy && _isHost
+			) )
+			.ToList();
+
+		// Rotate tips
+		_tipTimer += Time.Delta;
+		if ( _tipTimer >= 7f )
+		{
+			_tipTimer = 0f;
+			CurrentTip = GameLore.GetRandomTip();
+		}
+
+		// Track local player for customizer
+		_localPlayer = GoblinPlayer.All.FirstOrDefault( p => !p.IsProxy );
+		if ( _localPlayer is not null )
+		{
+			_selectedSkin = _localPlayer.SkinColorIndex;
+			_selectedHat = _localPlayer.AccessoryIndex;
+		}
+	}
+
+	void SetSkin( int idx )
+	{
+		_selectedSkin = idx;
+		_localPlayer?.RequestSetCustomization( _selectedSkin, _selectedHat );
+	}
+
+	void SetHat( int idx )
+	{
+		_selectedHat = idx;
+		_localPlayer?.RequestSetCustomization( _selectedSkin, _selectedHat );
+	}
+
+	void StartGame()
+	{
+		GameStateManager.Instance?.StartPregame();
+	}
+}

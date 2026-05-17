@@ -174,7 +174,8 @@ public sealed class PlayerInput : Component
 			return;
 		}
 
-		Log.Info( "Market panel toggled — check the ticker!" );
+		var overlay = Scene.GetAllComponents<UI.MarketOverlay>().FirstOrDefault();
+		overlay?.Toggle();
 	}
 
 	// ═══════════════════════════════
@@ -205,7 +206,7 @@ public sealed class PlayerInput : Component
 
 		// Call audit on that player
 		var deduction = Scene.GetAllComponents<SocialDeduction>().FirstOrDefault();
-		deduction?.RequestAuditVote( targetPlayer.Network.Owner.SteamId );
+		deduction?.RequestAuditVote( targetPlayer.Id );
 	}
 
 	// ═══════════════════════════════
@@ -227,10 +228,10 @@ public sealed class PlayerInput : Component
 			return;
 		}
 
-		var wallet = Components.Get<CryptoWallet>();
-		if ( wallet is null || wallet.GoblinCoin < 50f )
+		var inventory = Components.Get<SabotageInventory>();
+		if ( inventory is null || inventory.EMPGrenades <= 0 )
 		{
-			Log.Info( "Need 50 GBC to use EMP" );
+			Log.Info( "No EMP grenades — you'll get 2 at the start of Chaos phase" );
 			return;
 		}
 
@@ -245,8 +246,8 @@ public sealed class PlayerInput : Component
 			.FirstOrDefault( p => p.Network.Owner == caller );
 		if ( player is null ) return;
 
-		var wallet = player.Components.Get<CryptoWallet>();
-		if ( wallet is null || !wallet.TrySpend( 50f ) )
+		var inventory = player.Components.Get<SabotageInventory>();
+		if ( inventory is null || !inventory.TryUseEMP() )
 			return;
 
 		if ( EMPGrenadePrefab is null )

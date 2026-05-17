@@ -21,6 +21,12 @@ public sealed class CryptoWallet : Component
 	[Sync] public int MiningRigs { get; set; } = 0;
 	[Sync] public int TotalMined { get; set; } = 0;
 
+	// --- Bot identity ---
+	[Sync] public bool IsBot { get; set; } = false;
+	[Sync] public string BotName { get; set; } = "";
+
+	public string OwnerName => IsBot ? BotName : (Network.Owner?.DisplayName ?? "???");
+
 	// --- Token Holdings ---
 	// Maps token ID -> amount held. Synced across network.
 	[Sync] public NetDictionary<Guid, float> TokenHoldings { get; set; } = new();

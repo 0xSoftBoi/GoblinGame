@@ -161,6 +161,12 @@ public sealed class GameStateManager : Component
 				break;
 
 			case GamePhase.Chaos:
+				// Give each player their starting EMPs
+				foreach ( var p in GoblinPlayer.All )
+				{
+					p.Components.Get<SabotageInventory>()?.RefillForChaos();
+				}
+
 				// Open rug pull window for first 15 seconds
 				IsRugPullWindow = true;
 				_rugPullTimer = RugPullWindowDuration;
@@ -187,6 +193,9 @@ public sealed class GameStateManager : Component
 				// SEC might raid high-heat players
 				var sec = Scene.GetAllComponents<SECSystem>().FirstOrDefault();
 				sec?.CheckForRaids();
+
+				// Physics comedy — scatter the office
+				OfficeSetup.Instance?.TriggerPhysicsChaos( 0.8f );
 				break;
 
 			case GamePhase.Results:
@@ -237,6 +246,9 @@ public sealed class GameStateManager : Component
 		var deduction = Scene.GetAllComponents<SocialDeduction>().FirstOrDefault();
 		deduction?.AssignRoles();
 
+		// Fill empty slots with bots
+		BotPlayerManager.Instance?.RespawnBots();
+
 		// Spawn office if not already done
 		var office = Scene.GetAllComponents<OfficeSetup>().FirstOrDefault();
 		office?.SpawnOffice();
@@ -280,9 +292,12 @@ public sealed class GameStateManager : Component
 
 		// Check if rugger won (extra title)
 		var deduction = Scene.GetAllComponents<SocialDeduction>().FirstOrDefault();
-		if ( deduction is not null && deduction.IsRugger( richest.Network.Owner ) )
+		if ( deduction is not null )
 		{
-			WinnerTitle = "MASTER RUGGER 🎭";
+			var richestPlayer = GoblinPlayer.All
+				.FirstOrDefault( p => p.Network.Owner == richest.Network.Owner );
+			if ( richestPlayer is not null && deduction.IsRugger( richestPlayer ) )
+				WinnerTitle = "MASTER RUGGER 🎭";
 		}
 
 		Log.Info( $"WINNER: {WinnerName} — {WinnerTitle} — {totalValue:N1} GBC portfolio!" );

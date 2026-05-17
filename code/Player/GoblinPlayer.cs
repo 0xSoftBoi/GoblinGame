@@ -32,6 +32,22 @@ public sealed class GoblinPlayer : Component
 	[Sync] public bool IsCrouching { get; set; }
 	[Sync] public bool IsSprinting { get; set; }
 
+	// --- Customization ---
+	[Sync] public int SkinColorIndex { get; set; } = 0;
+	[Sync] public int AccessoryIndex { get; set; } = 0;
+
+	public static readonly Color[] SkinColors =
+	{
+		new Color( 0.22f, 0.47f, 0.17f ), // classic goblin green
+		new Color( 0.17f, 0.35f, 0.54f ), // swamp blue
+		new Color( 0.47f, 0.17f, 0.47f ), // toxic purple
+		new Color( 0.75f, 0.35f, 0.17f ), // lava orange
+		new Color( 0.10f, 0.10f, 0.14f ), // void black
+		new Color( 0.69f, 0.56f, 0.13f ), // gold goblin
+	};
+	public static readonly string[] AccessoryIcons = { "", "🎩", "👑", "🪖", "🎪" };
+	public static readonly string[] SkinNames = { "GREEN", "BLUE", "PURPLE", "ORANGE", "BLACK", "GOLD" };
+
 	// --- Cached Components ---
 	private CharacterController _cc;
 	private CitizenAnimationHelper _anim;
@@ -76,13 +92,15 @@ public sealed class GoblinPlayer : Component
 	{
 		// Animate regardless of ownership (so other players animate too)
 		UpdateAnimation();
+		ApplyCustomization();
 
 		if ( IsProxy ) return;
 
 		// --- Mouse Look ---
 		var angles = EyeAngles;
-		angles.pitch += Input.MouseDelta.y * 0.1f;
-		angles.yaw -= Input.MouseDelta.x * 0.1f;
+		float sens = 0.1f * GameSettings.MouseSensitivity;
+		angles.pitch += Input.MouseDelta.y * sens;
+		angles.yaw -= Input.MouseDelta.x * sens;
 		angles.roll = 0f;
 		angles.pitch = angles.pitch.Clamp( -89.9f, 89.9f );
 		EyeAngles = angles;
@@ -238,6 +256,26 @@ public sealed class GoblinPlayer : Component
 		// Also check parent (for child colliders on complex objects)
 		var parentInteractable = trace.GameObject.Parent?.Components.Get<IInteractable>();
 		parentInteractable?.OnInteract( this );
+	}
+
+	// =========================================================
+	//  CUSTOMIZATION
+	// =========================================================
+
+	private void ApplyCustomization()
+	{
+		var bodyRenderer = Body?.Components.Get<ModelRenderer>();
+		if ( bodyRenderer is null ) return;
+		int si = SkinColorIndex.Clamp( 0, SkinColors.Length - 1 );
+		bodyRenderer.Tint = SkinColors[si];
+	}
+
+	[Rpc.Host]
+	public void RequestSetCustomization( int skinIdx, int accIdx )
+	{
+		if ( Rpc.Caller != Network.Owner ) return;
+		SkinColorIndex = skinIdx.Clamp( 0, SkinColors.Length - 1 );
+		AccessoryIndex = accIdx.Clamp( 0, AccessoryIcons.Length - 1 );
 	}
 }
 

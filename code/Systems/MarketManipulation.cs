@@ -32,6 +32,9 @@ public sealed class MarketManipulation : Component
 
 	// --- Active manipulations ---
 	[Sync] public int ActivePumpGroups { get; set; } = 0;
+	[Sync] public string LatestPumpId { get; set; } = "";
+	// Maps GoblinPlayer.Id → shortId string, so all clients can see who has open shorts
+	[Sync] public NetDictionary<Guid, string> PlayerShortIds { get; set; } = new();
 
 	private Dictionary<Guid, PumpGroupData> _activePumps = new();
 	private Dictionary<Guid, ShortPosition> _activeShorts = new();
@@ -84,6 +87,7 @@ public sealed class MarketManipulation : Component
 		{
 			_activePumps.Remove( id );
 			ActivePumpGroups--;
+			if ( ActivePumpGroups == 0 ) LatestPumpId = "";
 			BroadcastPumpEnd();
 		}
 	}
@@ -113,7 +117,7 @@ public sealed class MarketManipulation : Component
 
 		// Add SEC heat
 		var sec = Scene.GetAllComponents<SECSystem>().FirstOrDefault();
-		sec?.AddHeat( player.GameObject, WashTradeHeat );
+		sec?.AddHeat( player,WashTradeHeat );
 
 		BroadcastWashTrade( caller.DisplayName );
 	}
@@ -160,10 +164,11 @@ public sealed class MarketManipulation : Component
 			Participants = new List<Guid> { caller.SteamId }
 		};
 		ActivePumpGroups++;
+		LatestPumpId = pumpId.ToString();
 
 		// SEC heat
 		var sec = Scene.GetAllComponents<SECSystem>().FirstOrDefault();
-		sec?.AddHeat( player.GameObject, PumpGroupHeat );
+		sec?.AddHeat( player,PumpGroupHeat );
 
 		BroadcastPumpStart( caller.DisplayName, pumpId.ToString() );
 	}
@@ -185,7 +190,7 @@ public sealed class MarketManipulation : Component
 		pump.BoostPerSecond += PumpGroupBoost * 0.5f; // Each joiner adds 50% more boost
 
 		var sec = Scene.GetAllComponents<SECSystem>().FirstOrDefault();
-		sec?.AddHeat( player.GameObject, PumpGroupHeat * 0.5f );
+		sec?.AddHeat( player,PumpGroupHeat * 0.5f );
 	}
 
 	[Rpc.Broadcast]
@@ -234,19 +239,20 @@ public sealed class MarketManipulation : Component
 		var shortId = Guid.NewGuid();
 		_activeShorts[shortId] = new ShortPosition
 		{
-			PlayerId = caller.SteamId,
+			PlayerId = player.Id,
 			TokenId = tokenId,
 			EntryPrice = token.Value.Price,
 			Amount = amount,
 			Leverage = ShortSellLeverage
 		};
+		PlayerShortIds[player.Id] = shortId.ToString();
 
 		// Shorting applies sell pressure
 		tokenSystem?.ApplyNPCSellPressure( tokenId, amount * 0.5f );
 
 		// SEC heat
 		var sec = Scene.GetAllComponents<SECSystem>().FirstOrDefault();
-		sec?.AddHeat( player.GameObject, ShortSellHeat );
+		sec?.AddHeat( player,ShortSellHeat );
 
 		BroadcastShort( caller.DisplayName );
 	}
@@ -261,7 +267,8 @@ public sealed class MarketManipulation : Component
 		if ( !_activeShorts.TryGetValue( shortId, out var pos ) ) return;
 
 		var caller = Rpc.Caller;
-		if ( pos.PlayerId != caller.SteamId ) return;
+		var player = FindPlayer( caller );
+		if ( player is null || pos.PlayerId != player.Id ) return;
 
 		var tokenSystem = Scene.GetAllComponents<TokenSystem>().FirstOrDefault();
 		var token = tokenSystem?.GetToken( pos.TokenId );
@@ -270,24 +277,32 @@ public sealed class MarketManipulation : Component
 		float priceDiff = pos.EntryPrice - token.Value.Price;
 		float profit = priceDiff * pos.Amount * pos.Leverage;
 
-		var player = FindPlayer( caller );
-		var wallet = player?.Components.Get<CryptoWallet>();
+		var wallet = player.Components.Get<CryptoWallet>();
 		if ( wallet is null ) return;
 
 		if ( profit > 0 )
 		{
 			wallet.Deposit( profit );
-			Log.Info( $"Short closed: +{profit:N0} GBC profit!" );
+			BroadcastShortClosed( caller.DisplayName, profit, true );
 		}
 		else
 		{
-			// Loss — take from balance (can't go negative)
 			float loss = MathF.Min( MathF.Abs( profit ), wallet.GoblinCoin );
 			wallet.TrySpend( loss );
-			Log.Info( $"Short closed: -{loss:N0} GBC loss! Rekt." );
+			BroadcastShortClosed( caller.DisplayName, loss, false );
 		}
 
 		_activeShorts.Remove( shortId );
+		PlayerShortIds.Remove( player.Id );
+	}
+
+	[Rpc.Broadcast]
+	private void BroadcastShortClosed( string playerName, float amount, bool profit )
+	{
+		string msg = profit
+			? $"🐻→🟢 {playerName} closed their short: +{amount:N0} GBC"
+			: $"🐻→🔴 {playerName} got rekt on a short: -{amount:N0} GBC";
+		Log.Info( msg );
 	}
 
 	[Rpc.Broadcast]

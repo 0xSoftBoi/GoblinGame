@@ -76,6 +76,18 @@
 					"Enabled": true
 				},
 				{
+					"__type": "GoblinChain.EraManager",
+					"__version": 0,
+					"Enabled": true
+				},
+				{
+					"__type": "GoblinChain.BotPlayerManager",
+					"__version": 0,
+					"Enabled": true,
+					"MinPlayers": 4,
+					"MaxBots": 3
+				},
+				{
 					"__type": "GoblinChain.SocialDeduction",
 					"__version": 0,
 					"Enabled": true

@@ -320,6 +320,24 @@ public sealed class TokenSystem : Component
 	//  SHILL PRESSURE (called by GoblinTwitter)
 	// ═══════════════════════════════════════
 
+	/// <summary>
+	/// Called by CryptoMarket each tick to apply global sentiment as gentle buy/sell pressure
+	/// across all active tokens. sentiment is -1 (panic) to +1 (euphoria).
+	/// </summary>
+	public void ApplyGlobalDrift( float sentiment )
+	{
+		if ( IsProxy || MathF.Abs( sentiment ) < 0.1f ) return;
+
+		foreach ( var id in ActiveTokens.Keys.ToList() )
+		{
+			if ( !ActiveTokens.TryGetValue( id, out var token ) || token.IsRugged ) continue;
+			if ( sentiment > 0 )
+				ApplyNPCBuyPressure( id, sentiment * 10f );
+			else
+				ApplyNPCSellPressure( id, -sentiment * 10f );
+		}
+	}
+
 	public void AddShillPressure( Guid tokenId, float amount )
 	{
 		if ( !_shillPressure.ContainsKey( tokenId ) )
@@ -398,6 +416,20 @@ public sealed class TokenSystem : Component
 	// ═══════════════════════════════════════
 	//  ROUND MANAGEMENT
 	// ═══════════════════════════════════════
+
+	/// <summary>
+	/// Called by GameStateManager at the start of a new match to wipe all tokens.
+	/// </summary>
+	public void ResetAllTokens()
+	{
+		if ( IsProxy ) return;
+		ActiveTokens.Clear();
+		_shillPressure.Clear();
+		_buyPressure.Clear();
+		_sellPressure.Clear();
+		_priceHistory.Clear();
+		TotalTokensCreated = 0;
+	}
 
 	/// <summary>
 	/// Called at end of results phase to clean up dead tokens.

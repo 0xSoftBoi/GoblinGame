@@ -77,6 +77,11 @@
 					"Enabled": true
 				},
 				{
+					"__type": "GoblinChain.SECHeatComponent",
+					"__version": 0,
+					"Enabled": true
+				},
+				{
 					"__type": "GoblinChain.ProximityVoice",
 					"__version": 0,
 					"Enabled": true

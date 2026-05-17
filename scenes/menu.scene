@@ -1,0 +1,45 @@
+{
+	"__guid": "aa00bb11-cc22-dd33-ee44-ff5566778899",
+	"__version": 0,
+	"GameObjects": [
+		{
+			"__guid": "bb11cc22-dd33-ee44-ff55-66778899aabb",
+			"__version": 0,
+			"Enabled": true,
+			"Name": "MenuRoot",
+			"Position": "0,0,0",
+			"Rotation": "0,0,0,1",
+			"Scale": "1,1,1",
+			"Tags": "",
+			"Components": [
+				{
+					"__type": "Sandbox.ScreenPanel",
+					"__version": 0,
+					"Enabled": true,
+					"Scale": 1.0,
+					"ZIndex": 0
+				}
+			],
+			"Children": [
+				{
+					"__guid": "cc22dd33-ee44-ff55-6677-8899aabbcc22",
+					"__version": 0,
+					"Enabled": true,
+					"Name": "MainMenu",
+					"Position": "0,0,0",
+					"Rotation": "0,0,0,1",
+					"Scale": "1,1,1",
+					"Tags": "",
+					"Components": [
+						{
+							"__type": "GoblinChain.UI.MainMenu",
+							"__version": 0,
+							"Enabled": true
+						}
+					],
+					"Children": []
+				}
+			]
+		}
+	]
+}

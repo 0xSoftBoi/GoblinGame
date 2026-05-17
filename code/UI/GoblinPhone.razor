@@ -23,6 +23,7 @@
 				<div class="tab @(CurrentTab == "trending" ? "active" : "")" onclick="@(() => CurrentTab = "trending")">TRENDING</div>
 				<div class="tab @(CurrentTab == "compose" ? "active" : "")" onclick="@(() => CurrentTab = "compose")">POST</div>
 				<div class="tab @(CurrentTab == "portfolio" ? "active" : "")" onclick="@(() => CurrentTab = "portfolio")">BAGS</div>
+				<div class="tab @(CurrentTab == "market" ? "active" : "")" onclick="@(() => CurrentTab = "market")">DEGEN</div>
 			</div>
 
 			<!-- Content area -->
@@ -43,6 +44,10 @@
 				else if ( CurrentTab == "portfolio" )
 				{
 					@RenderPortfolio()
+				}
+				else if ( CurrentTab == "market" )
+				{
+					@RenderMarket()
 				}
 
 			</div>
@@ -318,6 +323,139 @@
 	}
 
 	// ═══════════════════════════════════════
+	//  MARKET MANIPULATION TAB
+	// ═══════════════════════════════════════
+
+	private Guid _shortTokenId = Guid.Empty;
+	private float _shortAmount = 100f;
+
+	private RenderFragment RenderMarket()
+	{
+		var manip = MarketManipulation.Instance;
+		var tokenSys = TokenSystem.Instance;
+		var localPlayer = GoblinPlayer.All.FirstOrDefault( p => !p.IsProxy );
+		var wallet = localPlayer?.Components.Get<CryptoWallet>();
+
+		if ( manip is null || tokenSys is null || wallet is null )
+			return @<div class="empty-feed">Market data unavailable</div>;
+
+		var tokens = tokenSys.ActiveTokens.Values
+			.Where( t => !t.IsRugged )
+			.OrderByDescending( t => t.Price )
+			.ToList();
+
+		return @<div class="market-panel">
+
+			<!-- Wash Trading -->
+			<div class="mkt-section">
+				<div class="mkt-section-title">WASH TRADING <span class="mkt-cost">@manip.WashTradeCost.ToString("N0") GBC / action</span></div>
+				<div class="mkt-desc">Fake volume. Boost your token's price. Very illegal. +SEC Heat.</div>
+				@if ( tokens.Count == 0 )
+				{
+					<div class="mkt-empty">No active tokens</div>
+				}
+				@foreach ( var tok in tokens )
+				{
+					<div class="mkt-row">
+						<span class="mkt-tok-name">$@tok.Ticker</span>
+						<span class="mkt-tok-price">@tok.Price.ToString("F3")</span>
+						<button class="mkt-btn" onclick="@(() => DoWashTrade(tok.Id))">WASH</button>
+					</div>
+				}
+			</div>
+
+			<!-- Pump Group -->
+			<div class="mkt-section">
+				<div class="mkt-section-title">PUMP GROUP <span class="mkt-cost">@manip.PumpGroupCost.ToString("N0") GBC</span></div>
+				<div class="mkt-desc">Coordinate a pump. Others can join for half price.</div>
+				@if ( manip.ActivePumpGroups > 0 && !string.IsNullOrEmpty(manip.LatestPumpId) )
+				{
+					<div class="mkt-pump-active">@manip.ActivePumpGroups active pump group(s)</div>
+					<button class="mkt-btn join-pump" onclick="@DoJoinPump">JOIN PUMP (@((manip.PumpGroupCost * 0.5f).ToString("N0")) GBC)</button>
+				}
+				@foreach ( var tok in tokens.Take(3) )
+				{
+					<div class="mkt-row">
+						<span class="mkt-tok-name">$@tok.Ticker</span>
+						<button class="mkt-btn" onclick="@(() => DoPump(tok.Id))">START PUMP</button>
+					</div>
+				}
+			</div>
+
+			<!-- Short Selling -->
+			<div class="mkt-section">
+				<div class="mkt-section-title">SHORT SELL <span class="mkt-cost">@manip.ShortSellCost.ToString("N0") GBC</span></div>
+				<div class="mkt-desc">Bet a token dumps. Profit = (entry - exit) × @manip.ShortSellLeverage.ToString("F0")x leverage.</div>
+				@{ bool hasShort = localPlayer is not null && manip.PlayerShortIds.ContainsKey( localPlayer.Id ); }
+				@if ( hasShort )
+				{
+					<div class="mkt-open-short">
+						<span class="mkt-open-short-label">⚠ You have an open short position</span>
+						<button class="mkt-btn close-short" onclick="@DoCloseShort">CLOSE SHORT</button>
+					</div>
+				}
+				else if ( OfficeSetup.Instance?.OfficeEra >= 2 )
+				{
+					<div class="mkt-short-controls">
+						<div class="mkt-row" style="flex-wrap:wrap; gap:4px;">
+							@foreach ( var tok in tokens.Take(4) )
+							{
+								<button class="mkt-tok-chip @(_shortTokenId == tok.Id ? "selected" : "")"
+										onclick="@(() => _shortTokenId = tok.Id)">$@tok.Ticker</button>
+							}
+						</div>
+						<div class="mkt-amount-row">
+							<button class="mkt-adj" onclick="@(() => _shortAmount = MathF.Max(10f, _shortAmount - 50f))">−</button>
+							<span class="mkt-amount">@_shortAmount.ToString("N0") units</span>
+							<button class="mkt-adj" onclick="@(() => _shortAmount += 50f)">+</button>
+						</div>
+						<button class="mkt-btn short-btn @(_shortTokenId == Guid.Empty ? "disabled" : "")"
+								onclick="@DoShort">OPEN SHORT</button>
+					</div>
+				}
+				else
+				{
+					<div class="mkt-empty">Unlocks at Exchange Era (Era 3)</div>
+				}
+			</div>
+
+		</div>;
+	}
+
+	private void DoWashTrade( Guid tokenId )
+	{
+		MarketManipulation.Instance?.RequestWashTrade( tokenId );
+	}
+
+	private void DoPump( Guid tokenId )
+	{
+		MarketManipulation.Instance?.RequestStartPump( tokenId );
+	}
+
+	private void DoJoinPump()
+	{
+		var manip = MarketManipulation.Instance;
+		if ( manip is null || string.IsNullOrEmpty( manip.LatestPumpId ) ) return;
+		manip.RequestJoinPump( manip.LatestPumpId );
+	}
+
+	private void DoShort()
+	{
+		if ( _shortTokenId == Guid.Empty ) return;
+		MarketManipulation.Instance?.RequestShortSell( _shortTokenId, _shortAmount );
+		_shortTokenId = Guid.Empty;
+	}
+
+	private void DoCloseShort()
+	{
+		var manip = MarketManipulation.Instance;
+		var localPlayer = GoblinPlayer.All.FirstOrDefault( p => !p.IsProxy );
+		if ( manip is null || localPlayer is null ) return;
+		if ( manip.PlayerShortIds.TryGetValue( localPlayer.Id, out var shortId ) )
+			manip.RequestCloseShort( shortId );
+	}
+
+	// ═══════════════════════════════════════
 	//  ACTIONS
 	// ═══════════════════════════════════════
 
@@ -499,4 +637,61 @@
 	.port-val.green { color: #00ff88; }
 	.port-val.red { color: #ff4444; }
 	.port-pct { font-size: 10px; opacity: 0.5; min-width: 32px; text-align: right; }
+
+	/* Market / Degen tab */
+	.market-panel { display: flex; flex-direction: column; gap: 10px; padding: 4px; }
+	.mkt-section {
+		background: rgba(255,68,68,0.04);
+		border: 1px solid rgba(255,68,68,0.15);
+		border-radius: 5px;
+		padding: 8px 10px;
+	}
+	.mkt-section-title {
+		font-size: 9px; letter-spacing: 2px; color: #ff4444;
+		margin-bottom: 3px; display: flex; justify-content: space-between;
+	}
+	.mkt-cost { color: #ffcc00; font-size: 9px; }
+	.mkt-desc { font-size: 9px; color: #444; margin-bottom: 8px; }
+	.mkt-empty { font-size: 10px; color: #333; text-align: center; padding: 6px; }
+	.mkt-row {
+		display: flex; align-items: center; gap: 6px;
+		padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+	}
+	.mkt-tok-name { flex: 1; font-size: 12px; color: #ccc; font-weight: bold; }
+	.mkt-tok-price { font-size: 10px; color: #555; min-width: 44px; text-align: right; }
+	.mkt-btn {
+		font-size: 9px; letter-spacing: 1px; padding: 4px 10px;
+		background: rgba(255,68,68,0.12); color: #ff4444;
+		border: 1px solid rgba(255,68,68,0.3); border-radius: 3px; cursor: pointer;
+		font-family: 'Consolas', monospace;
+	}
+	.mkt-btn:hover { background: rgba(255,68,68,0.25); }
+	.mkt-btn.disabled { opacity: 0.3; pointer-events: none; }
+	.mkt-btn.join-pump { color: #ffcc00; border-color: rgba(255,204,0,0.4); background: rgba(255,204,0,0.08); width: 100%; margin-bottom: 6px; }
+	.mkt-btn.short-btn { width: 100%; color: #ff4444; margin-top: 6px; }
+	.mkt-pump-active { font-size: 10px; color: #ffcc00; text-align: center; margin-bottom: 4px; }
+	.mkt-tok-chip {
+		font-size: 9px; padding: 3px 8px;
+		background: rgba(255,255,255,0.04); color: #555;
+		border: 1px solid #333; border-radius: 12px; cursor: pointer;
+		font-family: 'Consolas', monospace;
+	}
+	.mkt-tok-chip.selected { color: #ff4444; border-color: #ff4444; background: rgba(255,68,68,0.1); }
+	.mkt-amount-row { display: flex; align-items: center; gap: 8px; justify-content: center; margin: 6px 0; }
+	.mkt-amount { font-size: 12px; color: #ccc; min-width: 80px; text-align: center; }
+	.mkt-adj {
+		font-size: 14px; width: 28px; height: 28px;
+		background: rgba(255,255,255,0.05); color: #888;
+		border: 1px solid #333; border-radius: 3px; cursor: pointer;
+	}
+	.mkt-adj:hover { color: #ff4444; border-color: #ff4444; }
+	.mkt-short-controls { display: flex; flex-direction: column; gap: 4px; }
+	.mkt-open-short {
+		display: flex; flex-direction: column; align-items: center; gap: 8px;
+		padding: 10px; border: 1px solid rgba(255,68,68,0.3);
+		border-radius: 4px; background: rgba(255,68,68,0.06);
+	}
+	.mkt-open-short-label { font-size: 10px; color: #ff8888; letter-spacing: 1px; }
+	.mkt-btn.close-short { width: 100%; color: #ff8888; border-color: rgba(255,136,136,0.5); background: rgba(255,68,68,0.15); }
+	.mkt-btn.close-short:hover { background: rgba(255,68,68,0.3); }
 </style>

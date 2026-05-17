@@ -1,0 +1,233 @@
+@using Sandbox;
+@using Sandbox.UI;
+
+@namespace GoblinChain.UI
+@inherits PanelComponent
+
+<root class="esc-menu @(IsOpen ? "open" : "closed")">
+
+	<div class="esc-panel">
+
+		<div class="esc-logo">GOBLIN CHAIN</div>
+
+		@if ( _page == "main" )
+		{
+			<div class="esc-stack">
+				<button class="esc-btn primary" onclick="@Close">▶ RESUME</button>
+				<button class="esc-btn" onclick="@(() => _page = "controls")">⌨ CONTROLS</button>
+				<button class="esc-btn" onclick="@(() => _page = "settings")">⚙ SETTINGS</button>
+				<button class="esc-btn danger" onclick="@LeaveGame">⏻ LEAVE GAME</button>
+			</div>
+		}
+		else if ( _page == "controls" )
+		{
+			<div class="esc-section-label">CONTROLS</div>
+			<div class="controls-table">
+				<div class="ctrl-row"><span class="ctrl-key">W A S D</span><span class="ctrl-desc">Move</span></div>
+				<div class="ctrl-row"><span class="ctrl-key">Mouse</span><span class="ctrl-desc">Look</span></div>
+				<div class="ctrl-row"><span class="ctrl-key">Space</span><span class="ctrl-desc">Jump</span></div>
+				<div class="ctrl-row"><span class="ctrl-key">Shift</span><span class="ctrl-desc">Sprint</span></div>
+				<div class="ctrl-row"><span class="ctrl-key">E</span><span class="ctrl-desc">Interact · Place Mining Rig</span></div>
+				<div class="ctrl-row"><span class="ctrl-key">T</span><span class="ctrl-desc">GoblinPhone (shill, portfolio, degen)</span></div>
+				<div class="ctrl-row"><span class="ctrl-key">Y</span><span class="ctrl-desc">Trade Panel (send / accept offers)</span></div>
+				<div class="ctrl-row"><span class="ctrl-key">M</span><span class="ctrl-desc">Market (buy / sell tokens)</span></div>
+				<div class="ctrl-row"><span class="ctrl-key">C</span><span class="ctrl-desc">Token Creator (Create phase only)</span></div>
+				<div class="ctrl-row"><span class="ctrl-key">Q</span><span class="ctrl-desc">EMP Grenade (Chaos phase only)</span></div>
+				<div class="ctrl-row"><span class="ctrl-key">V</span><span class="ctrl-desc">Call Audit on looked-at player</span></div>
+				<div class="ctrl-row"><span class="ctrl-key">Esc</span><span class="ctrl-desc">This menu</span></div>
+			</div>
+			<button class="esc-btn" style="margin-top: 16px;" onclick="@(() => _page = "main")">← BACK</button>
+		}
+		else if ( _page == "settings" )
+		{
+			<div class="esc-section-label">MOUSE SENSITIVITY</div>
+			<div class="set-row">
+				<button class="set-adj" onclick="@(() => ChangeSens(-0.1f))">−</button>
+				<div class="set-bar">
+					<div class="set-bar-fill" style="width: @((_sensitivity / 5f * 100f).ToString("F0"))%"></div>
+				</div>
+				<span class="set-val">@_sensitivity.ToString("F1")</span>
+				<button class="set-adj" onclick="@(() => ChangeSens(0.1f))">+</button>
+			</div>
+
+			<div class="esc-section-label">MASTER VOLUME</div>
+			<div class="set-row">
+				<button class="set-adj" onclick="@(() => ChangeVolume(-0.1f))">−</button>
+				<div class="set-bar">
+					<div class="set-bar-fill" style="width: @((_volume * 100f).ToString("F0"))%"></div>
+				</div>
+				<span class="set-val">@((_volume * 100f).ToString("F0"))%</span>
+				<button class="set-adj" onclick="@(() => ChangeVolume(0.1f))">+</button>
+			</div>
+
+			<button class="esc-btn" style="margin-top: 16px;" onclick="@(() => _page = "main")">← BACK</button>
+		}
+
+	</div>
+
+</root>
+
+<style>
+.esc-menu {
+	position: absolute;
+	left: 0; top: 0; right: 0; bottom: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	pointer-events: all;
+}
+.esc-menu.closed { display: none; }
+
+.esc-menu::before {
+	content: "";
+	position: absolute;
+	left: 0; top: 0; right: 0; bottom: 0;
+	background: rgba(0, 0, 0, 0.65);
+}
+
+.esc-panel {
+	position: relative;
+	width: 360px;
+	background: rgba(3, 5, 18, 0.98);
+	border: 1px solid #00ff88;
+	border-radius: 8px;
+	padding: 28px 32px;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 6px;
+	font-family: 'Consolas', monospace;
+}
+
+.esc-logo {
+	font-size: 20px;
+	font-weight: bold;
+	letter-spacing: 6px;
+	color: #00ff88;
+	margin-bottom: 16px;
+	text-shadow: 0 0 20px rgba(0,255,136,0.2);
+}
+
+.esc-stack {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	width: 100%;
+}
+
+.esc-btn {
+	width: 100%;
+	padding: 13px 0;
+	font-size: 14px;
+	font-weight: bold;
+	letter-spacing: 3px;
+	font-family: 'Consolas', monospace;
+	background: rgba(255,255,255,0.03);
+	color: #888;
+	border: 1px solid #222;
+	border-radius: 4px;
+	cursor: pointer;
+	text-align: center;
+	transition: all 0.12s;
+}
+.esc-btn:hover { background: rgba(0,255,136,0.07); color: #00ff88; border-color: #00ff88; }
+.esc-btn.primary { color: #00ff88; border-color: #00ff88; background: rgba(0,255,136,0.06); }
+.esc-btn.primary:hover { background: rgba(0,255,136,0.18); }
+.esc-btn.danger { color: #ff4444; border-color: #331111; }
+.esc-btn.danger:hover { background: rgba(255,68,68,0.12); border-color: #ff4444; }
+
+.esc-section-label {
+	font-size: 9px;
+	letter-spacing: 3px;
+	color: #444;
+	align-self: flex-start;
+	margin-top: 8px;
+	margin-bottom: 6px;
+	border-bottom: 1px solid #1a1a3a;
+	width: 100%;
+	padding-bottom: 4px;
+}
+
+.controls-table {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	width: 100%;
+}
+.ctrl-row { display: flex; gap: 14px; align-items: center; }
+.ctrl-key { font-size: 11px; font-weight: bold; color: #00ff88; min-width: 72px; letter-spacing: 1px; }
+.ctrl-desc { font-size: 11px; color: #555; }
+
+.set-row {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	width: 100%;
+	margin-bottom: 4px;
+}
+.set-adj {
+	width: 28px; height: 28px; font-size: 16px;
+	background: rgba(255,255,255,0.04); border: 1px solid #333;
+	border-radius: 3px; color: #888; cursor: pointer;
+}
+.set-adj:hover { color: #00ff88; border-color: #00ff88; }
+.set-bar {
+	flex: 1; height: 6px;
+	background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden;
+}
+.set-bar-fill { height: 100%; background: #00ff88; border-radius: 3px; transition: width 0.1s; }
+.set-val { font-size: 12px; color: #888; min-width: 36px; text-align: right; }
+</style>
+
+@code
+{
+	public bool IsOpen { get; set; } = false;
+
+	private string _page = "main";
+	private float _sensitivity = GameSettings.MouseSensitivity;
+	private float _volume = GameSettings.MasterVolume;
+
+	protected override void OnUpdate()
+	{
+		if ( Input.Pressed( "Menu" ) )
+		{
+			if ( IsOpen )
+				Close();
+			else
+				Open();
+		}
+	}
+
+	public void Open()
+	{
+		IsOpen = true;
+		_page = "main";
+		_sensitivity = GameSettings.MouseSensitivity;
+		_volume = GameSettings.MasterVolume;
+		Mouse.Visible = true;
+	}
+
+	public void Close()
+	{
+		IsOpen = false;
+		Mouse.Visible = false;
+	}
+
+	void ChangeSens( float delta )
+	{
+		_sensitivity = MathF.Round( MathF.Clamp( _sensitivity + delta, 0.1f, 5.0f ), 1 );
+		GameSettings.MouseSensitivity = _sensitivity;
+	}
+
+	void ChangeVolume( float delta )
+	{
+		_volume = MathF.Round( MathF.Clamp( _volume + delta, 0f, 1.0f ), 1 );
+		GameSettings.MasterVolume = _volume;
+	}
+
+	void LeaveGame()
+	{
+		Close();
+		Scene.LoadFromFile( "scenes/menu.scene" );
+	}
+}

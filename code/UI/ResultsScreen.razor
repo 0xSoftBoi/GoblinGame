@@ -262,11 +262,11 @@
 		// Build scoreboard
 		Players = Scene.GetAllComponents<CryptoWallet>()
 			.Select( w => new PlayerResult(
-				w.Network.Owner?.DisplayName ?? "???",
+				w.OwnerName,
 				w.GoblinCoin,
 				w.TotalMined,
 				w.MiningRigs,
-				!w.IsProxy
+				!w.IsProxy && !w.IsBot
 			) )
 			.OrderByDescending( p => p.Balance )
 			.ToList();

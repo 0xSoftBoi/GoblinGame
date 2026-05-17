@@ -16,18 +16,70 @@
 		<div class="logo-version">@GameVersion.Phase @GameVersion.Current</div>
 	</div>
 
-	<!-- Menu Buttons -->
-	<div class="menu-stack">
-		<button class="menu-btn primary" onclick="@HostGame">
-			<span class="btn-icon">▶</span> HOST GAME
-		</button>
-		<button class="menu-btn" onclick="@JoinGame">
-			<span class="btn-icon">◈</span> JOIN GAME
-		</button>
-		<button class="menu-btn" onclick="@ToggleSettings">
-			<span class="btn-icon">⚙</span> SETTINGS
-		</button>
-	</div>
+	@if ( !_showSettings )
+	{
+		<!-- Menu Buttons -->
+		<div class="menu-stack">
+			<button class="menu-btn primary" onclick="@HostGame">
+				<span class="btn-icon">▶</span> HOST GAME
+			</button>
+			<button class="menu-btn" onclick="@JoinGame">
+				<span class="btn-icon">◈</span> JOIN GAME
+			</button>
+			<button class="menu-btn" onclick="@ToggleSettings">
+				<span class="btn-icon">⚙</span> SETTINGS
+			</button>
+		</div>
+	}
+	else
+	{
+		<!-- Settings Panel -->
+		<div class="settings-panel">
+			<div class="set-header">SETTINGS</div>
+
+			<!-- Controls -->
+			<div class="set-section-label">CONTROLS</div>
+			<div class="controls-table">
+				<div class="ctrl-row"><span class="ctrl-key">W A S D</span><span class="ctrl-desc">Move</span></div>
+				<div class="ctrl-row"><span class="ctrl-key">Mouse</span><span class="ctrl-desc">Look</span></div>
+				<div class="ctrl-row"><span class="ctrl-key">Space</span><span class="ctrl-desc">Jump</span></div>
+				<div class="ctrl-row"><span class="ctrl-key">Shift</span><span class="ctrl-desc">Sprint</span></div>
+				<div class="ctrl-row"><span class="ctrl-key">E</span><span class="ctrl-desc">Interact / Place Rig</span></div>
+				<div class="ctrl-row"><span class="ctrl-key">T</span><span class="ctrl-desc">GoblinPhone (shill, bags, degen)</span></div>
+				<div class="ctrl-row"><span class="ctrl-key">Y</span><span class="ctrl-desc">Trade panel</span></div>
+				<div class="ctrl-row"><span class="ctrl-key">M</span><span class="ctrl-desc">Market overview (buy / sell)</span></div>
+				<div class="ctrl-row"><span class="ctrl-key">C</span><span class="ctrl-desc">Token Creator (Create phase)</span></div>
+				<div class="ctrl-row"><span class="ctrl-key">Q</span><span class="ctrl-desc">EMP Grenade (Chaos phase)</span></div>
+				<div class="ctrl-row"><span class="ctrl-key">V</span><span class="ctrl-desc">Call Audit on looked-at player</span></div>
+			</div>
+
+			<!-- Sensitivity -->
+			<div class="set-section-label">MOUSE SENSITIVITY</div>
+			<div class="set-row">
+				<button class="set-adj" onclick="@(() => ChangeSens(-0.1f))">−</button>
+				<div class="set-bar">
+					<div class="set-bar-fill" style="width: @((_sensitivity / 5f * 100f).ToString("F0"))%"></div>
+				</div>
+				<span class="set-val">@_sensitivity.ToString("F1")</span>
+				<button class="set-adj" onclick="@(() => ChangeSens(0.1f))">+</button>
+			</div>
+
+			<!-- Volume -->
+			<div class="set-section-label">MASTER VOLUME</div>
+			<div class="set-row">
+				<button class="set-adj" onclick="@(() => ChangeVolume(-0.1f))">−</button>
+				<div class="set-bar">
+					<div class="set-bar-fill" style="width: @((_volume * 100f).ToString("F0"))%"></div>
+				</div>
+				<span class="set-val">@((_volume * 100f).ToString("F0"))%</span>
+				<button class="set-adj" onclick="@(() => ChangeVolume(0.1f))">+</button>
+			</div>
+
+			<button class="menu-btn primary" style="margin-top: 20px;" onclick="@ToggleSettings">
+				← BACK
+			</button>
+		</div>
+	}
 
 	<!-- Player Count -->
 	<div class="online-count">
@@ -166,6 +218,98 @@
 	color: #222;
 	letter-spacing: 2px;
 }
+
+/* ─── Settings ─── */
+
+.settings-panel {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	width: 420px;
+	background: rgba(5, 5, 20, 0.96);
+	border: 1px solid #00ff88;
+	border-radius: 8px;
+	padding: 24px 28px;
+}
+
+.set-header {
+	font-size: 18px;
+	font-weight: bold;
+	letter-spacing: 6px;
+	color: #00ff88;
+	margin-bottom: 12px;
+	text-align: center;
+}
+
+.set-section-label {
+	font-size: 9px;
+	letter-spacing: 3px;
+	color: #444;
+	margin-top: 10px;
+	margin-bottom: 6px;
+	border-bottom: 1px solid #1a1a3a;
+	padding-bottom: 4px;
+}
+
+.controls-table {
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+	margin-bottom: 4px;
+}
+.ctrl-row {
+	display: flex;
+	gap: 14px;
+	align-items: center;
+	padding: 2px 0;
+}
+.ctrl-key {
+	font-size: 11px;
+	font-weight: bold;
+	color: #00ff88;
+	min-width: 70px;
+	letter-spacing: 1px;
+}
+.ctrl-desc {
+	font-size: 11px;
+	color: #555;
+}
+
+.set-row {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+.set-adj {
+	width: 28px;
+	height: 28px;
+	font-size: 16px;
+	background: rgba(255,255,255,0.04);
+	border: 1px solid #333;
+	border-radius: 3px;
+	color: #888;
+	cursor: pointer;
+}
+.set-adj:hover { color: #00ff88; border-color: #00ff88; }
+.set-bar {
+	flex: 1;
+	height: 6px;
+	background: rgba(255,255,255,0.06);
+	border-radius: 3px;
+	overflow: hidden;
+}
+.set-bar-fill {
+	height: 100%;
+	background: #00ff88;
+	border-radius: 3px;
+	transition: width 0.1s;
+}
+.set-val {
+	font-size: 12px;
+	color: #888;
+	min-width: 36px;
+	text-align: right;
+}
 </style>
 
 @code
@@ -173,6 +317,9 @@
 	public string CurrentTip { get; set; } = GameLore.GetRandomTip();
 	private float _tipTimer = 0f;
 	private float _tipInterval = 6f;
+	private bool _showSettings = false;
+	private float _sensitivity = GameSettings.MouseSensitivity;
+	private float _volume = GameSettings.MasterVolume;
 
 	protected override void OnUpdate()
 	{
@@ -186,18 +333,37 @@
 
 	void HostGame()
 	{
-		Log.Info( "Hosting game..." );
+		GameSettings.Apply();
 		Scene.LoadFromFile( "scenes/main.scene" );
 	}
 
 	void JoinGame()
 	{
-		Log.Info( "Opening lobby browser..." );
-		// S&box lobby browser integration would go here
+		// S&box: the engine's built-in lobby browser handles game discovery.
+		// Players browse via the S&box overlay (Shift+Tab) or the game hub page.
+		Log.Info( "Use the S&box overlay (Shift+Tab) to browse and join lobbies." );
 	}
 
 	void ToggleSettings()
 	{
-		Log.Info( "Settings not yet implemented" );
+		_showSettings = !_showSettings;
+		if ( !_showSettings )
+		{
+			// Apply on close
+			GameSettings.MouseSensitivity = _sensitivity;
+			GameSettings.MasterVolume = _volume;
+		}
+	}
+
+	void ChangeSens( float delta )
+	{
+		_sensitivity = MathF.Round( MathF.Clamp( _sensitivity + delta, 0.1f, 5.0f ), 1 );
+		GameSettings.MouseSensitivity = _sensitivity;
+	}
+
+	void ChangeVolume( float delta )
+	{
+		_volume = MathF.Round( MathF.Clamp( _volume + delta, 0f, 1.0f ), 1 );
+		GameSettings.MasterVolume = _volume;
 	}
 }

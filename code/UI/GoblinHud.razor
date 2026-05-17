@@ -5,7 +5,7 @@
 @namespace GoblinChain.UI
 @inherits PanelComponent
 
-<root class="goblin-hud">
+<root class="goblin-hud @(IsInLobby ? "hud-hidden" : "")">
 
 	<!-- ═══ TOP BAR: Phase + Timer ═══ -->
 	<div class="top-bar">
@@ -92,6 +92,15 @@
 		</div>
 	}
 
+	@if ( _eraBannerTimer > 0f )
+	{
+		<div class="era-banner">
+			<div class="era-banner-label">ERA UNLOCKED</div>
+			<div class="era-banner-name">@_eraBannerName</div>
+			<div class="era-banner-desc">@_eraBannerDesc</div>
+		</div>
+	}
+
 </root>
 
 <style>
@@ -105,7 +114,9 @@
 	font-family: 'Consolas', 'Courier New', monospace;
 	pointer-events: none;
 	color: white;
+	transition: opacity 0.3s;
 }
+.goblin-hud.hud-hidden { opacity: 0; pointer-events: none; }
 
 /* ─── TOP BAR ─── */
 
@@ -326,6 +337,38 @@
 	font-weight: bold;
 }
 
+/* ─── ERA BANNER ─── */
+
+.era-banner {
+	position: absolute;
+	top: 80px;
+	left: 50%;
+	transform: translateX(-50%);
+	background: rgba(5, 5, 20, 0.95);
+	border: 1px solid #ffcc00;
+	border-radius: 6px;
+	padding: 14px 32px;
+	text-align: center;
+	pointer-events: none;
+}
+.era-banner-label {
+	font-size: 9px;
+	color: #555;
+	letter-spacing: 4px;
+	margin-bottom: 4px;
+}
+.era-banner-name {
+	font-size: 22px;
+	font-weight: bold;
+	color: #ffcc00;
+	letter-spacing: 2px;
+}
+.era-banner-desc {
+	font-size: 11px;
+	color: #666;
+	margin-top: 4px;
+}
+
 /* ─── WINNER OVERLAY ─── */
 
 .winner-overlay {
@@ -394,6 +437,13 @@
 	private float _prevBalance;
 	private float _trendTimer;
 
+	public bool IsInLobby => CurrentPhase == "WAITINGFORPLAYERS";
+
+	// Era banner
+	private float _eraBannerTimer;
+	private string _eraBannerName = "";
+	private string _eraBannerDesc = "";
+
 	// === Computed CSS classes ===
 
 	public string PhaseClass => CurrentPhase.ToLower() switch
@@ -451,6 +501,8 @@
 		PullLeaderboard();
 		PullInteraction();
 		UpdateTrend();
+		if ( _eraBannerTimer > 0f )
+			_eraBannerTimer -= Time.Delta;
 	}
 
 	private void PullGameState()
@@ -493,9 +545,9 @@
 	{
 		Players = Scene.GetAllComponents<CryptoWallet>()
 			.Select( w => new PlayerInfo(
-				w.Network.Owner?.DisplayName ?? "???",
+				w.OwnerName,
 				w.GoblinCoin,
-				!w.IsProxy
+				!w.IsProxy && !w.IsBot
 			) )
 			.OrderByDescending( p => p.Balance )
 			.Take( 8 )
@@ -545,6 +597,13 @@
 		}
 
 		ShowInteractPrompt = false;
+	}
+
+	public void ShowEraTransition( string name, string desc )
+	{
+		_eraBannerName = name;
+		_eraBannerDesc = desc;
+		_eraBannerTimer = 5f;
 	}
 
 	private void UpdateTrend()

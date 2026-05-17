@@ -15,6 +15,7 @@ public sealed class PlayerNametag : Component
 	[Property] public float MaxDistance { get; set; } = 1200f;
 
 	private WorldPanel _panel;
+	private Label _hatLabel;
 	private Label _nameLabel;
 	private Label _balanceLabel;
 	private Panel _voiceIndicator;
@@ -50,6 +51,12 @@ public sealed class PlayerNametag : Component
 		root.Style.FlexDirection = FlexDirection.Column;
 		root.Style.AlignItems = Align.Center;
 		root.Style.JustifyContent = Justify.Center;
+
+		// Hat (accessory icon)
+		_hatLabel = root.AddChild<Label>();
+		_hatLabel.Text = "";
+		_hatLabel.Style.FontSize = 16;
+		_hatLabel.Style.Height = 0; // hidden until set
 
 		// Name
 		_nameLabel = root.AddChild<Label>();
@@ -94,6 +101,19 @@ public sealed class PlayerNametag : Component
 		// Content
 		string name = _player?.Network.Owner?.DisplayName ?? GameObject.Name;
 		_nameLabel.Text = name;
+
+		// Hat icon
+		if ( _player is not null && _player.AccessoryIndex > 0 )
+		{
+			string icon = GoblinPlayer.AccessoryIcons[_player.AccessoryIndex.Clamp( 0, GoblinPlayer.AccessoryIcons.Length - 1 )];
+			_hatLabel.Text = icon;
+			_hatLabel.Style.Height = Length.Auto;
+		}
+		else
+		{
+			_hatLabel.Text = "";
+			_hatLabel.Style.Height = 0;
+		}
 
 		if ( _wallet is not null )
 			_balanceLabel.Text = $"{_wallet.GoblinCoin:N0} GBC";

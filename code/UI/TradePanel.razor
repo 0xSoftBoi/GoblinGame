@@ -143,8 +143,21 @@
 				<div class="tp-offer-card">
 					<div class="tp-offer-from">From: @offer.SenderName</div>
 					<div class="tp-offer-detail">
-						Offers <span class="up">@offer.TheirCoins GBC</span>
-						· Wants <span class="down">@offer.WantCoins GBC</span>
+						@if ( offer.TheirCoins > 0 || !string.IsNullOrEmpty(offer.OfferedToken) )
+						{
+							<span class="up">
+								@if ( offer.TheirCoins > 0 ) { @($"{offer.TheirCoins:N0} GBC") }
+								@if ( !string.IsNullOrEmpty(offer.OfferedToken) ) { @($" + {offer.OfferedTokenAmt:N2} ${offer.OfferedToken}") }
+							</span>
+						}
+						<span style="color:#555"> → </span>
+						@if ( offer.WantCoins > 0 || !string.IsNullOrEmpty(offer.WantedToken) )
+						{
+							<span class="down">
+								@if ( offer.WantCoins > 0 ) { @($"{offer.WantCoins:N0} GBC") }
+								@if ( !string.IsNullOrEmpty(offer.WantedToken) ) { @($" + {offer.WantedTokenAmt:N2} ${offer.WantedToken}") }
+							</span>
+						}
 					</div>
 					<div class="tp-offer-actions">
 						<button class="tp-btn-sm accept" onclick="@(() => AcceptOffer(offer.TradeId))">ACCEPT</button>
@@ -343,7 +356,10 @@
 {
 	// === Data types ===
 	public record NearbyPlayer( Guid Id, string Name, float Distance );
-	public record IncomingOffer( Guid TradeId, string SenderName, float TheirCoins, float WantCoins );
+	public record IncomingOffer( Guid TradeId, string SenderName,
+		float TheirCoins, float WantCoins,
+		string OfferedToken, float OfferedTokenAmt,
+		string WantedToken, float WantedTokenAmt );
 	public record TokenOption( Guid TokenId, string Ticker, float Held );
 
 	// === State ===
@@ -506,6 +522,50 @@
 		trading?.RejectTrade( tradeId );
 	}
 
+	void PollIncomingOffers( GoblinPlayer local )
+	{
+		var trading = TradingSystem.Instance;
+		if ( trading is null || local is null ) return;
+
+		var tokenSystem = Scene.GetAllComponents<TokenSystem>().FirstOrDefault();
+		var newOffers = new List<IncomingOffer>();
+
+		foreach ( var kv in trading.ActiveTrades )
+		{
+			var t = kv.Value;
+			if ( t.ReceiverObjectId != local.Id ) continue;
+			if ( t.ReceiverAccepted ) continue;
+
+			string offTicker = "";
+			string wantTicker = "";
+			if ( tokenSystem is not null )
+			{
+				if ( t.OfferedTokenId != System.Guid.Empty
+					&& tokenSystem.ActiveTokens.TryGetValue( t.OfferedTokenId, out var offTok ) )
+					offTicker = offTok.Ticker;
+				if ( t.RequestedTokenId != System.Guid.Empty
+					&& tokenSystem.ActiveTokens.TryGetValue( t.RequestedTokenId, out var wantTok ) )
+					wantTicker = wantTok.Ticker;
+			}
+
+			newOffers.Add( new IncomingOffer(
+				t.TradeId, t.SenderName,
+				t.OfferedCoins, t.RequestedCoins,
+				offTicker, t.OfferedTokenAmount,
+				wantTicker, t.RequestedTokenAmount
+			) );
+		}
+
+		// Auto-open panel when a new offer arrives
+		if ( newOffers.Count > IncomingOffers.Count && !IsVisible )
+		{
+			IsVisible = true;
+			Mouse.Visible = true;
+		}
+
+		IncomingOffers = newOffers;
+	}
+
 	void ShowStatus( string msg, string cls )
 	{
 		StatusMessage = msg;
@@ -517,6 +577,10 @@
 
 	protected override void OnUpdate()
 	{
+		// Always poll incoming offers so we can notify/auto-open
+		var local = GoblinPlayer.All.FirstOrDefault( p => !p.IsProxy );
+		PollIncomingOffers( local );
+
 		if ( !IsVisible ) return;
 
 		// Toggle with T key
@@ -527,7 +591,6 @@
 		}
 
 		// Scan for nearby players
-		var local = GoblinPlayer.All.FirstOrDefault( p => !p.IsProxy );
 		if ( local is not null )
 		{
 			NearbyPlayers = GoblinPlayer.All
@@ -542,8 +605,6 @@
 				.ToList();
 		}
 
-		// TODO: Pull incoming offers from TradingSystem
-		// For now, this would check TradingSystem.ActiveTrades for trades targeting us
 
 		// Status timer
 		if ( _statusTimer > 0 )

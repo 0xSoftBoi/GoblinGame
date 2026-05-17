@@ -229,7 +229,46 @@ public sealed class SocialDeduction : Component
 		AuditVoteTimer = AuditVoteDuration;
 		_auditVotes.Clear();
 
-		BroadcastAuditStarted( caller.DisplayName );
+		BroadcastAuditStarted( caller.DisplayName, "", Guid.Empty );
+	}
+
+	/// <summary>
+	/// Called from PlayerInput (V key): starts an audit if none in progress,
+	/// then immediately casts the caller's vote for the specified suspect.
+	/// </summary>
+	[Rpc.Host]
+	public void RequestAuditVote( Guid suspectId )
+	{
+		var caller = Rpc.Caller;
+		var player = FindPlayer( caller );
+		if ( player is null ) return;
+
+		if ( !AuditInProgress )
+		{
+			if ( AuditsUsed >= MaxAudits )
+			{
+				Log.Warning( "Max audits reached" );
+				return;
+			}
+
+			var wallet = player.Components.Get<CryptoWallet>();
+			if ( wallet is null || !wallet.TrySpend( AuditCost ) ) return;
+
+			AuditsUsed++;
+			AuditInProgress = true;
+			AuditVoteTimer = AuditVoteDuration;
+			_auditVotes.Clear();
+
+			string suspectName = GoblinPlayer.All
+				.FirstOrDefault( p => p.Id == suspectId )
+				?.Network.Owner?.DisplayName ?? "???";
+			BroadcastAuditStarted( caller.DisplayName, suspectName, suspectId );
+		}
+
+		_auditVotes[player.Id] = suspectId;
+
+		if ( _auditVotes.Count >= GoblinPlayer.All.Count() )
+			ResolveAudit();
 	}
 
 	[Rpc.Host]
@@ -340,10 +379,16 @@ public sealed class SocialDeduction : Component
 	}
 
 	[Rpc.Broadcast]
-	private void BroadcastAuditStarted( string callerName )
+	private void BroadcastAuditStarted( string callerName, string suspectName, Guid suspectId )
 	{
 		Sound.Play( "sounds/phase_transition.sound" );
-		Log.Info( $"AUDIT CALLED by {callerName}! Vote now — who is the Rugger?" );
+		Log.Info( $"AUDIT CALLED by {callerName}! {suspectName} is accused!" );
+
+		if ( suspectId != Guid.Empty )
+		{
+			var auditVote = Scene.GetAllComponents<UI.AuditVote>().FirstOrDefault();
+			auditVote?.Show( callerName, suspectName, suspectId );
+		}
 	}
 
 	[Rpc.Broadcast]

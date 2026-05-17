@@ -282,6 +282,23 @@ public sealed class GoblinTwitter : Component
 	}
 
 	// ═══════════════════════════════════════
+	//  ROUND MANAGEMENT
+	// ═══════════════════════════════════════
+
+	/// <summary>
+	/// Called by GameStateManager at match start to wipe the feed and interaction state.
+	/// </summary>
+	public void ClearAllPosts()
+	{
+		if ( IsProxy ) return;
+		Feed.Clear();
+		_likedBy.Clear();
+		_repostedBy.Clear();
+		_fuddedBy.Clear();
+		_reportedBy.Clear();
+	}
+
+	// ═══════════════════════════════════════
 	//  TRENDING
 	// ═══════════════════════════════════════
 
