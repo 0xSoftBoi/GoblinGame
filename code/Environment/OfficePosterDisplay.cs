@@ -75,6 +75,13 @@ public sealed class OfficePosterDisplay : Component
 		var (headline, body, footer) = Posters[idx];
 
 		_panel.Style.BackgroundColor = new Color( 0.96f, 0.95f, 0.88f, 1f ); // off-white paper
+
+		// Generated art behind the text (tools/generate_assets.py); the paper
+		// color above stays as the fallback if the texture isn't found
+		var art = Texture.Load( FileSystem.Mounted, $"materials/posters/poster_{idx}.png" );
+		if ( art is not null )
+			_panel.Style.BackgroundImage = art;
+
 		_panel.Style.Padding = 24;
 		_panel.Style.FontFamily = "Consolas";
 		_panel.Style.AlignItems = Align.Center;

@@ -63,6 +63,7 @@ public sealed class OfficeSetup : Component
 		ClearOffice();
 		SpawnMarketBoard();
 		SpawnPosters();
+		SpawnEraLighting();
 
 		// Furniture: editor-assigned prefabs win; otherwise free cloud assets;
 		// otherwise dev-box placeholders. Board + posters spawn above so they
@@ -350,9 +351,49 @@ public sealed class OfficeSetup : Component
 				("facepunch.watermelon", 8f) },
 		// Era 3 — Penthouse: more ATMs. The ATMs are the decor now.
 		new[] { ("facepunch.atm", 150f), ("facepunch.fridge", 90f),
-				("facepunch.couch", 60f), ("facepunch.tv", 12f),
-				("facepunch.watermelon", 8f) },
+				("facepunch.couch", 60f), ("facepunch.money_stack", 10f),
+				("facepunch.money_stack", 10f), ("facepunch.watermelon", 8f) },
 	};
+
+	// Accent lighting per era: garage bulb → office white → exchange neon → penthouse gold
+	private static readonly Color[] EraLightColors =
+	{
+		new Color( 1.0f, 0.72f, 0.45f ),
+		new Color( 0.92f, 0.96f, 1.0f ),
+		new Color( 0.45f, 0.72f, 1.0f ),
+		new Color( 1.0f, 0.84f, 0.42f ),
+	};
+
+	/// <summary>
+	/// Four corner accent lights tinted by era. No rigidbody, so physics
+	/// chaos leaves them alone.
+	/// </summary>
+	private void SpawnEraLighting()
+	{
+		var tint = EraLightColors[Math.Clamp( OfficeEra, 0, EraLightColors.Length - 1 )];
+
+		Vector3[] spots =
+		{
+			OfficeCenter + new Vector3( -OfficeWidth * 0.3f, -OfficeDepth * 0.3f, 220f ),
+			OfficeCenter + new Vector3(  OfficeWidth * 0.3f, -OfficeDepth * 0.3f, 220f ),
+			OfficeCenter + new Vector3( -OfficeWidth * 0.3f,  OfficeDepth * 0.3f, 220f ),
+			OfficeCenter + new Vector3(  OfficeWidth * 0.3f,  OfficeDepth * 0.3f, 220f ),
+		};
+
+		foreach ( var pos in spots )
+		{
+			var go = Scene.CreateObject();
+			go.Name = "EraLight";
+			go.WorldPosition = pos;
+
+			var light = go.Components.Create<PointLight>();
+			light.LightColor = tint * (0.6f + OfficeEra * 0.25f);
+			light.Radius = 450f;
+
+			go.NetworkSpawn();
+			_spawnedProps.Add( go );
+		}
+	}
 
 	/// <summary>
 	/// Builds the office from free cloud assets when no prefabs are assigned.

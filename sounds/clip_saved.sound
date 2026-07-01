@@ -2,5 +2,7 @@
   "__comment": "Short UI chime or camera click",
   "Volume": "0.6",
   "Pitch": "1.0,1.0",
-  "Sounds": []
+  "Sounds": [
+    "sounds/clip_saved.wav"
+  ]
 }

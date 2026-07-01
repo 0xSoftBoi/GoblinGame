@@ -44,9 +44,11 @@ public sealed class GoblinPlayer : Component
 		new Color( 0.75f, 0.35f, 0.17f ), // lava orange
 		new Color( 0.10f, 0.10f, 0.14f ), // void black
 		new Color( 0.69f, 0.56f, 0.13f ), // gold goblin
+		new Color( 0.55f, 0.12f, 0.14f ), // rugpull red
+		new Color( 0.16f, 0.55f, 0.50f ), // mint (ponzi fresh)
 	};
 	public static readonly string[] AccessoryIcons = { "", "🎩", "👑", "🪖", "🎪" };
-	public static readonly string[] SkinNames = { "GREEN", "BLUE", "PURPLE", "ORANGE", "BLACK", "GOLD" };
+	public static readonly string[] SkinNames = { "GREEN", "BLUE", "PURPLE", "ORANGE", "BLACK", "GOLD", "RED", "MINT" };
 
 	// --- Cached Components ---
 	private CharacterController _cc;

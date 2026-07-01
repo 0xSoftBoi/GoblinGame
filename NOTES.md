@@ -109,6 +109,37 @@ pizza_box, traffic_cone, couch, microwave, watermelon, atm, fridge.
   coffee_machine, whiteboard, potted_plant, keyboard, monitor,
   filing_cabinet, desk_lamp, water_cooler, computer variants.
 
+### Original generated assets (audio, art, music) — tools/generate_assets.py
+
+Everything below is generated from a committed, deterministic Python script
+(`python3 tools/generate_assets.py`, needs numpy + pillow) — zero licensing
+exposure, re-rollable by tweaking parameters:
+
+- **All 16 SFX are now real audio.** The .sound stubs shipped with
+  `"Sounds": []` (silent). Each now references a synthesized WAV designed
+  per event: market_crash = sub-boom + falling saw + debris noise,
+  trade_complete = tick + ka-ching bell, emp_blast = FM zap + crackle,
+  winner = fanfare, clip_saved = camera shutter, etc.
+- **Phase music**: 4 seamless chiptune loops from a tiny tracker in the
+  generator — Create 92 BPM lo-fi (Am pent), Shill 118 BPM grindset,
+  Chaos 145 BPM sirens, Results 100 BPM triumph. `MusicManager.cs`
+  (created at runtime by GoblinChainGame, purely client-side) picks the
+  track by phase, re-triggers at each loop's known length (hardcoded —
+  keep in sync if you re-roll), and ducks to 40% during live SEC raids.
+- **Poster art**: 8 low-contrast PNG backgrounds (sunburst / rug mid-pull /
+  moon trajectory / up-only chart / goblin illuminati seal / shrinking
+  bags / dip waves) behind the WorldPanel text in OfficePosterDisplay,
+  paper color kept as fallback.
+- **Skins**: palette extended to 8 tints (added RUGPULL RED, PONZI MINT);
+  all consumers iterate array length so it's index-safe.
+- Era accent lighting: 4 PointLights per corner, warm bulb → office white →
+  exchange neon blue → penthouse gold, brighter each era.
+- `facepunch.money_stack` verified and added to penthouse clutter.
+- Player model research: no free s&box goblin playermodel exists on
+  sbox.game (the goblin one that turns up in search is GMod workshop —
+  wrong platform). Tinted citizen stays the approach; a real goblin model
+  is a commission/editor job.
+
 ### Known gaps / future work
 
 - **Era environments are now cloud-furnished but not architectural** — same

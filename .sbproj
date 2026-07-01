@@ -35,7 +35,8 @@
       "facepunch.microwave",
       "facepunch.watermelon",
       "facepunch.atm",
-      "facepunch.fridge"
+      "facepunch.fridge",
+      "facepunch.money_stack"
     ],
     "Compiler": {
       "RootNamespace": "GoblinChain",

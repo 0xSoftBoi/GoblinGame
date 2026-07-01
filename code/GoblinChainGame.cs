@@ -26,6 +26,9 @@ public sealed class GoblinChainGame : Component, Component.INetworkListener
 
 		LoadHud();
 
+		// Phase music runs locally on every machine (host and clients)
+		Components.GetOrCreate<MusicManager>();
+
 		if ( IsProxy )
 			return;
 

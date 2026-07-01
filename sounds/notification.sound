@@ -2,5 +2,7 @@
   "__comment": "Soft ping / message received",
   "Volume": "0.55",
   "Pitch": "1.0,1.05",
-  "Sounds": []
+  "Sounds": [
+    "sounds/notification.wav"
+  ]
 }

@@ -1,0 +1,9 @@
+{
+  "__comment": "Generated phase music loop \u2014 see tools/generate_assets.py",
+  "Volume": "0.30",
+  "Pitch": "1.0",
+  "UI": true,
+  "Sounds": [
+    "sounds/music_create.wav"
+  ]
+}

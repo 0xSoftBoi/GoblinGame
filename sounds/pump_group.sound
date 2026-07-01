@@ -2,5 +2,7 @@
   "__comment": "Crowd cheer or buying frenzy sting",
   "Volume": "0.7",
   "Pitch": "1.0,1.05",
-  "Sounds": []
+  "Sounds": [
+    "sounds/pump_group.wav"
+  ]
 }

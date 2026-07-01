@@ -2,5 +2,7 @@
   "__comment": "Mechanical clunk / placement thud",
   "Volume": "0.75",
   "Pitch": "0.95,1.05",
-  "Sounds": []
+  "Sounds": [
+    "sounds/rig_placed.wav"
+  ]
 }

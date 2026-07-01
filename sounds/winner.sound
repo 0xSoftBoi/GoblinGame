@@ -2,5 +2,7 @@
   "__comment": "Victory fanfare / winning jingle",
   "Volume": "1.0",
   "Pitch": "1.0,1.0",
-  "Sounds": []
+  "Sounds": [
+    "sounds/winner.wav"
+  ]
 }
