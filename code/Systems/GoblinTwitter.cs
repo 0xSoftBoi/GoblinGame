@@ -91,7 +91,7 @@ public sealed class GoblinTwitter : Component
 		float risk = ShillTemplates.CalculateRisk( openerIdx, claimIdx, proofIdx, ctaIdx );
 
 		string postText = ShillTemplates.AssemblePostText(
-			openerIdx, claimIdx, proofIdx, ctaIdx, customText );
+			openerIdx, claimIdx, proofIdx, ctaIdx, token.Value.Ticker, customText );
 
 		// Create post
 		var post = new PostData

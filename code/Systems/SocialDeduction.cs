@@ -24,6 +24,21 @@ public sealed class SocialDeduction : Component
 	[Sync] public bool AuditInProgress { get; set; } = false;
 	[Sync] public float AuditVoteTimer { get; set; } = 0f;
 
+	// Current audit session (synced so all clients render the same vote)
+	[Sync] public Guid CurrentAccusedId { get; set; } = Guid.Empty;
+	[Sync] public int GuiltyVotes { get; set; } = 0;
+	[Sync] public int InnocentVotes { get; set; } = 0;
+
+	// End-of-match reveal, set when the match ends ("" until then)
+	[Sync] public string FinalRuggerReveal { get; set; } = "";
+
+	// Shadow Wallet: host publishes what each player's balance LOOKS like.
+	// The Rugger's entry is discounted; clients render this, not raw balances.
+	[Sync] public NetDictionary<Guid, float> PublicBalances { get; set; } = new();
+
+	/// <summary>Set on the Rugger's client only, via targeted RPC. UI gates on this.</summary>
+	public static bool LocalIsRugger { get; private set; } = false;
+
 	// --- Config ---
 	[Property] public float RuggerChance { get; set; } = 0.7f; // 70% chance there IS a rugger
 	[Property] public float GrandRugThreshold { get; set; } = 0.5f; // 50% of total GBC
@@ -54,6 +69,11 @@ public sealed class SocialDeduction : Component
 		RuggerExposed = false;
 		GrandRugTriggered = false;
 		AuditsUsed = 0;
+		FinalRuggerReveal = "";
+		CurrentAccusedId = Guid.Empty;
+		GuiltyVotes = 0;
+		InnocentVotes = 0;
+		ResetLocalRoles();
 
 		// Roll for rugger existence
 		if ( _rng.NextDouble() > RuggerChance )
@@ -258,6 +278,9 @@ public sealed class SocialDeduction : Component
 			AuditInProgress = true;
 			AuditVoteTimer = AuditVoteDuration;
 			_auditVotes.Clear();
+			CurrentAccusedId = suspectId;
+			GuiltyVotes = 0;
+			InnocentVotes = 0;
 
 			string suspectName = GoblinPlayer.All
 				.FirstOrDefault( p => p.Id == suspectId )
@@ -266,6 +289,7 @@ public sealed class SocialDeduction : Component
 		}
 
 		_auditVotes[player.Id] = suspectId;
+		UpdateVoteTallies();
 
 		if ( _auditVotes.Count >= GoblinPlayer.All.Count() )
 			ResolveAudit();
@@ -279,6 +303,7 @@ public sealed class SocialDeduction : Component
 		if ( player is null || !AuditInProgress ) return;
 
 		_auditVotes[player.Id] = suspectId;
+		UpdateVoteTallies();
 
 		// Check if all players have voted
 		int totalPlayers = GoblinPlayer.All.Count();
@@ -287,6 +312,15 @@ public sealed class SocialDeduction : Component
 			ResolveAudit();
 		}
 	}
+
+	/// <summary>A vote for the accused counts guilty; anything else (incl. Guid.Empty) is innocent.</summary>
+	private void UpdateVoteTallies()
+	{
+		GuiltyVotes = _auditVotes.Values.Count( v => v == CurrentAccusedId && v != Guid.Empty );
+		InnocentVotes = _auditVotes.Count - GuiltyVotes;
+	}
+
+	private float _publicBalanceTimer;
 
 	protected override void OnFixedUpdate()
 	{
@@ -300,70 +334,120 @@ public sealed class SocialDeduction : Component
 				ResolveAudit();
 			}
 		}
+
+		// Publish Shadow-Wallet-adjusted balances for client leaderboards
+		_publicBalanceTimer += Time.Delta;
+		if ( _publicBalanceTimer >= 1f )
+		{
+			_publicBalanceTimer = 0f;
+			foreach ( var p in GoblinPlayer.All )
+				PublicBalances[p.Id] = GetPublicBalance( p );
+		}
+	}
+
+	// ═══════════════════════════════════════
+	//  END-OF-MATCH REVEAL
+	// ═══════════════════════════════════════
+
+	/// <summary>
+	/// Called by GameStateManager when the match ends. Publishes who the
+	/// Rugger was (or wasn't) so the results screen can pay off the paranoia.
+	/// </summary>
+	public void RevealRugger()
+	{
+		if ( IsProxy ) return;
+
+		if ( _ruggerId == Guid.Empty )
+		{
+			FinalRuggerReveal = "There was NO Rugger this match. You did all of that to each other for free.";
+			return;
+		}
+
+		string name = GoblinPlayer.All
+			.FirstOrDefault( p => p.Id == _ruggerId )
+			?.Network.Owner?.DisplayName ?? "A goblin who left early";
+
+		if ( GrandRugTriggered )
+			FinalRuggerReveal = $"The Rugger was {name} — and they pulled the GRAND RUG. Check your bags. Actually, don't.";
+		else if ( RuggerExposed )
+			FinalRuggerReveal = $"The Rugger was {name}. The audit caught them. The system works (once).";
+		else
+			FinalRuggerReveal = $"The Rugger was {name}. Nobody caught them. They walk among you still.";
 	}
 
 	private void ResolveAudit()
 	{
 		AuditInProgress = false;
 
-		// Tally votes
-		var voteCounts = new Dictionary<Guid, int>();
-		foreach ( var vote in _auditVotes.Values )
-		{
-			if ( !voteCounts.ContainsKey( vote ) )
-				voteCounts[vote] = 0;
-			voteCounts[vote]++;
-		}
+		var accusedPlayer = GoblinPlayer.All
+			.FirstOrDefault( p => p.Id == CurrentAccusedId );
+		string accusedName = accusedPlayer?.Network.Owner?.DisplayName ?? "???";
 
-		if ( voteCounts.Count == 0 )
-		{
-			BroadcastAuditResult( false, "No votes", "" );
-			return;
-		}
+		UpdateVoteTallies();
+		bool verdictGuilty = GuiltyVotes > InnocentVotes;
+		bool wasActuallyRugger = CurrentAccusedId != Guid.Empty && CurrentAccusedId == _ruggerId;
 
-		// Find most-voted suspect
-		var topSuspect = voteCounts.OrderByDescending( kv => kv.Value ).First();
-		var suspectPlayer = GoblinPlayer.All
-			.FirstOrDefault( p => p.Id == topSuspect.Key );
-		string suspectName = suspectPlayer?.Network.Owner?.DisplayName ?? "???";
-
-		// Check if correct
-		bool correct = topSuspect.Key == _ruggerId && _ruggerId != Guid.Empty;
-
-		if ( correct )
+		if ( verdictGuilty && wasActuallyRugger )
 		{
 			RuggerExposed = true;
-			ExposedRuggerName = suspectName;
-			BroadcastAuditResult( true, suspectName, "RUGGER EXPOSED!" );
+			ExposedRuggerName = accusedName;
+			BroadcastAuditResult( true, true, accusedName, "RUGGER EXPOSED! Shadow Wallet revealed!" );
+		}
+		else if ( verdictGuilty )
+		{
+			// Lynched a clean goblin — everyone who voted guilty pays the fine
+			foreach ( var kv in _auditVotes )
+			{
+				if ( kv.Value != CurrentAccusedId ) continue;
+				var voter = GoblinPlayer.All.FirstOrDefault( p => p.Id == kv.Key );
+				var w = voter?.Components.Get<CryptoWallet>();
+				if ( w is not null )
+					w.GoblinCoin = MathF.Max( 0f, w.GoblinCoin - WrongAccusationPenalty );
+			}
+
+			BroadcastAuditResult( true, false, accusedName,
+				$"They were clean! Guilty voters fined {WrongAccusationPenalty:N0} GBC each." );
 		}
 		else
 		{
-			// Wrong — penalize the accused
-			if ( suspectPlayer is not null )
-			{
-				var wallet = suspectPlayer.Components.Get<CryptoWallet>();
-				if ( wallet is not null )
-					wallet.GoblinCoin -= WrongAccusationPenalty;
-			}
-
-			string msg = _ruggerId == Guid.Empty
-				? "There was no Rugger! Paranoia wins."
-				: "Wrong goblin! The Rugger remains hidden.";
-			BroadcastAuditResult( false, suspectName, msg );
+			// Acquitted — the books stay closed. Never reveal the truth here,
+			// or one cheap audit would end the deduction game.
+			BroadcastAuditResult( false, false, accusedName,
+				"Acquitted. The books stay closed. The truth stays buried." );
 		}
 
 		_auditVotes.Clear();
+		CurrentAccusedId = Guid.Empty;
 	}
 
 	// ═══════════════════════════════════════
 	//  BROADCASTS
 	// ═══════════════════════════════════════
 
-	[Rpc.Owner]
 	private void NotifyRugger( Connection target )
 	{
+		using ( Rpc.FilterInclude( c => c == target ) )
+		{
+			ClientReceiveRuggerRole();
+		}
+	}
+
+	[Rpc.Broadcast]
+	private void ClientReceiveRuggerRole()
+	{
+		LocalIsRugger = true;
 		Log.Info( "YOU ARE THE RUGGER. Accumulate 50% of all GBC to trigger the Grand Rug." );
 		Sound.Play( "sounds/event_negative.sound" );
+
+		var feed = Scene.GetAllComponents<UI.NotificationFeed>().FirstOrDefault();
+		feed?.PushNotification( "🎭 YOU ARE THE RUGGER",
+			"Shill hard, stack GBC, and Grand Rug when you hold 50%. Check the 🎭 tab on your phone. Tell no one.", "negative" );
+	}
+
+	[Rpc.Broadcast]
+	private void ResetLocalRoles()
+	{
+		LocalIsRugger = false;
 	}
 
 	[Rpc.Broadcast]
@@ -392,17 +476,20 @@ public sealed class SocialDeduction : Component
 	}
 
 	[Rpc.Broadcast]
-	private void BroadcastAuditResult( bool correct, string suspectName, string message )
+	private void BroadcastAuditResult( bool verdictGuilty, bool exposedRugger, string suspectName, string message )
 	{
-		string sound = correct ? "sounds/event_positive.sound" : "sounds/event_negative.sound";
+		string sound = exposedRugger ? "sounds/event_positive.sound" : "sounds/event_negative.sound";
 		Sound.Play( sound );
 		Log.Info( $"AUDIT RESULT: {message}" );
 
 		var feed = Scene.GetAllComponents<UI.NotificationFeed>().FirstOrDefault();
-		feed?.PushNotification( correct ? "EXPOSED" : "INNOCENT",
-			$"{suspectName}: {message}", correct ? "positive" : "negative" );
+		feed?.PushNotification( exposedRugger ? "EXPOSED" : "VERDICT",
+			$"{suspectName}: {message}", exposedRugger ? "positive" : "negative" );
 
-		ClipRecorder.Instance?.OnAuditResult( correct, suspectName, message );
+		var auditVote = Scene.GetAllComponents<UI.AuditVote>().FirstOrDefault();
+		auditVote?.ShowResult( verdictGuilty, exposedRugger );
+
+		ClipRecorder.Instance?.OnAuditResult( exposedRugger, suspectName, message );
 	}
 
 	// ═══════════════════════════════════════

@@ -446,7 +446,7 @@
 		var local = GoblinPlayer.All.FirstOrDefault( p => !p.IsProxy );
 		var w = local?.Components.Get<CryptoWallet>();
 		float maxHeld = w?.GetTokenHolding( OfferTokenId ) ?? 0f;
-		OfferTokenAmount = System.MathF.Clamp( OfferTokenAmount + delta, 0, maxHeld );
+		OfferTokenAmount = System.Math.Clamp( OfferTokenAmount + delta, 0, maxHeld );
 	}
 
 	void AdjustRequestToken( float delta )
@@ -583,12 +583,8 @@
 
 		if ( !IsVisible ) return;
 
-		// Toggle with T key
-		if ( Input.Pressed( "Trade" ) )
-		{
-			Close();
-			return;
-		}
+		// (Closing is handled by PlayerInput's AltTrade toggle — no listener here,
+		// a second one would fight it in the same frame.)
 
 		// Scan for nearby players
 		if ( local is not null )

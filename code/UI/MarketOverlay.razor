@@ -239,12 +239,8 @@
 
 	protected override void OnUpdate()
 	{
-		if ( Input.Pressed( "OpenMarket" ) && IsOpen )
-		{
-			Close();
-			return;
-		}
-
+		// (Toggling is handled by PlayerInput's OpenMarket handler — a second
+		// listener here would fire the same frame and cancel it out.)
 		if ( !IsOpen ) return;
 
 		var ts = TokenSystem.Instance;

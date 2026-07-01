@@ -91,27 +91,54 @@ public sealed class NPCInvestors : Component
 		var tokens = tokenSystem.GetActiveTokensSorted();
 		if ( tokens.Count == 0 ) return;
 
-		// Check trending posts for FOMO/FUD signals
-		float fomoSignal = 0f;
-		float fudSignal = 0f;
+		// READ THE FEED: build per-token hype and FUD signals. This is the
+		// whole point of NPCs — they believe what GoblinTwitter tells them.
+		var hype = new Dictionary<Guid, float>();
+		var fud = new Dictionary<Guid, float>();
 		if ( twitter is not null )
 		{
-			var trending = twitter.GetTrending();
-			fomoSignal = trending.Count > 0 ? 0.3f : 0f;
+			foreach ( var post in twitter.GetRecentPosts( 15 ) )
+			{
+				// NPC posts carry only a ticker; resolve it to a token id
+				Guid tokenId = post.TokenId;
+				if ( tokenId == Guid.Empty && !string.IsNullOrEmpty( post.TokenTicker ) )
+					tokenId = tokens.FirstOrDefault( t => t.Ticker == post.TokenTicker ).Id;
+				if ( tokenId == Guid.Empty ) continue;
 
-			// Count FUD replies in recent posts
-			var recentPosts = twitter.GetRecentPosts( 10 );
-			int fudCount = recentPosts.Sum( p => p.FudReplies );
-			fudSignal = MathF.Min( fudCount * 0.1f, 0.5f );
+				hype[tokenId] = hype.GetValueOrDefault( tokenId )
+					+ post.ShillPower * 0.04f + post.Likes * 0.03f + post.Reposts * 0.06f;
+				fud[tokenId] = fud.GetValueOrDefault( tokenId ) + post.FudReplies * 0.12f;
+			}
+
+			foreach ( var t in twitter.GetTrending() )
+				hype[t.TokenId] = hype.GetValueOrDefault( t.TokenId ) + 0.15f;
 		}
 
-		// Pick a random token to consider
-		var targetToken = tokens[_rng.Next( tokens.Count )];
+		// Pick a target: gullible bots chase whatever the feed is loudest about,
+		// the rest wander randomly
+		TokenData targetToken;
+		if ( hype.Count > 0 && _rng.NextDouble() < 0.35 + bot.Gullibility * 0.4 )
+		{
+			var hottest = hype.OrderByDescending( kv => kv.Value ).First().Key;
+			int idx = tokens.FindIndex( t => t.Id == hottest );
+			targetToken = idx >= 0 ? tokens[idx] : tokens[_rng.Next( tokens.Count )];
+		}
+		else
+		{
+			targetToken = tokens[_rng.Next( tokens.Count )];
+		}
 		if ( targetToken.IsRugged ) return; // Don't buy rugged tokens
+
+		float fomoSignal = MathF.Min( hype.GetValueOrDefault( targetToken.Id ), 0.6f );
+		float fudSignal = MathF.Min( fud.GetValueOrDefault( targetToken.Id ), 0.6f );
 
 		// Decision: buy, sell, or post on Twitter
 		float buyChance = BaseBuyChance + (bot.Greed * 0.2f) + (fomoSignal * bot.Gullibility * FOMOMultiplier);
 		float sellChance = BaseSellChance + (bot.Fear * 0.2f) + (fudSignal * bot.Fear * FUDMultiplier);
+
+		// Heavy FUD on a bag we hold? Panic wins over greed.
+		if ( fudSignal > 0.2f && bot.Holdings.GetValueOrDefault( targetToken.Id ) > 0f )
+			buyChance *= 0.3f;
 
 		// If token price is rising, NPCs FOMO in
 		if ( targetToken.Price > 1.5f )
@@ -161,7 +188,7 @@ public sealed class NPCInvestors : Component
 		}
 	}
 
-	private void NPCPost( NPCBot bot, GoblinTwitter twitter, TokenSystem.TokenData token )
+	private void NPCPost( NPCBot bot, GoblinTwitter twitter, TokenData token )
 	{
 		string[] bullishPosts = {
 			$"just aped into ${token.Ticker} 🚀 this is the one frens",
@@ -208,12 +235,30 @@ public sealed class NPCInvestors : Component
 	}
 
 	/// <summary>
-	/// Fires 2-3 NPC hype replies when a post hits the trending threshold (3 likes).
+	/// Fires 2-3 NPC hype replies when a post hits the trending threshold (3 likes),
+	/// and the reactors actually put money where their mouth is.
 	/// </summary>
 	public void TriggerTrendingReaction( string ticker )
 	{
 		var twitter = Scene.GetAllComponents<GoblinTwitter>().FirstOrDefault();
 		if ( twitter is null || _bots.Count == 0 ) return;
+
+		// FOMO buys: trending token gets real NPC volume
+		var tokenSystem = Scene.GetAllComponents<TokenSystem>().FirstOrDefault();
+		var token = tokenSystem?.GetActiveTokensSorted().FirstOrDefault( t => t.Ticker == ticker );
+		if ( tokenSystem is not null && token is not null && token.Value.Id != Guid.Empty )
+		{
+			foreach ( var buyer in _bots.OrderBy( _ => _rng.Next() ).Take( 3 ) )
+			{
+				if ( buyer.Balance < 20f ) continue;
+				float spend = buyer.Balance * (0.05f + buyer.Gullibility * 0.1f);
+				buyer.Balance -= spend;
+				buyer.Holdings[token.Value.Id] = buyer.Holdings.GetValueOrDefault( token.Value.Id )
+					+ spend / MathF.Max( token.Value.Price, 0.01f );
+				tokenSystem.ApplyNPCBuyPressure( token.Value.Id, spend );
+			}
+			tokenSystem.AddShillPressure( token.Value.Id, twitter.TrendingBonusBuyPressure * 20f );
+		}
 
 		string[] hypeReplies = {
 			$"${ticker} suddenly everywhere on my feed 👀",

@@ -1,69 +1,135 @@
 @using Sandbox;
 @using Sandbox.UI;
 @using System;
+@using System.Collections.Generic;
+@using System.Linq;
 
 @namespace GoblinChain.UI
 @inherits PanelComponent
 
 <!--
 	Token Creator — Opens during Create (Mining) phase.
-	Name your shitcoin, pick a ticker, choose an icon, launch it.
+	Stage 1: name your shitcoin, pick a ticker, choose an icon.
+	Stage 2: "code" the smart contract — wire each function to its
+	implementation. Correct wiring sets token quality (Scam → Blue Chip).
+	Stage 3: compile result, then launch.
 -->
 
 <root class="creator-root @(IsOpen ? "open" : "closed")">
 	@if ( IsOpen )
 	{
 		<div class="creator-frame">
-			<div class="creator-title">🪙 TOKEN CREATOR</div>
-			<div class="creator-subtitle">Launch your meme coin into the Underhive</div>
+			@if ( Stage == 0 )
+			{
+				<div class="creator-title">🪙 TOKEN CREATOR</div>
+				<div class="creator-subtitle">Launch your meme coin into the Underhive</div>
 
-			<!-- Token Name -->
-			<div class="field">
-				<label>TOKEN NAME:</label>
-				<TextEntry @ref="NameEntry" Text="@TokenName" MaxLength=24 class="text-input" />
-			</div>
-
-			<!-- Ticker -->
-			<div class="field">
-				<label>TICKER (3-5 chars):</label>
-				<TextEntry @ref="TickerEntry" Text="@Ticker" MaxLength=5 class="text-input ticker-input" />
-			</div>
-
-			<!-- Icon -->
-			<div class="field">
-				<label>ICON:</label>
-				<div class="icon-grid">
-					@for ( int i = 0; i < Icons.Length; i++ )
-					{
-						var idx = i;
-						<div class="icon-option @(SelectedIcon == idx ? "selected" : "")"
-							onclick="@(() => SelectedIcon = idx)">
-							@Icons[idx]
-						</div>
-					}
+				<!-- Token Name -->
+				<div class="field">
+					<label>TOKEN NAME:</label>
+					<TextEntry @ref="NameEntry" Text="@TokenName" MaxLength=24 class="text-input" />
 				</div>
-			</div>
 
-			<!-- Name Hype Preview -->
-			<div class="hype-preview">
-				<span>NAME HYPE: </span>
-				<span class="hype-bar">@GetHypeBar()</span>
-				<span class="hype-value">@GetHypeValue()</span>
-			</div>
+				<!-- Ticker -->
+				<div class="field">
+					<label>TICKER (3-5 chars):</label>
+					<TextEntry @ref="TickerEntry" Text="@Ticker" MaxLength=5 class="text-input ticker-input" />
+				</div>
 
-			<!-- Cost -->
-			<div class="cost-line">
-				Cost: <span class="cost-amount">50 GBC</span>
-			</div>
+				<!-- Icon -->
+				<div class="field">
+					<label>ICON:</label>
+					<div class="icon-grid">
+						@for ( int i = 0; i < Icons.Length; i++ )
+						{
+							var idx = i;
+							<div class="icon-option @(SelectedIcon == idx ? "selected" : "")"
+								onclick="@(() => SelectedIcon = idx)">
+								@Icons[idx]
+							</div>
+						}
+					</div>
+				</div>
 
-			<!-- Launch button -->
-			<div class="launch-button" onclick="@DoLaunch">
-				🚀 LAUNCH TOKEN
-			</div>
+				<!-- Name Hype Preview -->
+				<div class="hype-preview">
+					<span>NAME HYPE: </span>
+					<span class="hype-bar">@GetHypeBar()</span>
+					<span class="hype-value">@GetHypeValue()</span>
+				</div>
 
-			<div class="creator-tip">
-				Pro tip: meme names get more hype. ALL CAPS = bonus points.
-			</div>
+				<!-- Cost -->
+				<div class="cost-line">
+					Cost: <span class="cost-amount">50 GBC</span>
+				</div>
+
+				<div class="launch-button @(string.IsNullOrWhiteSpace(TokenName) ? "disabled" : "")" onclick="@GoToPuzzle">
+					⌨️ WRITE THE CONTRACT →
+				</div>
+
+				<div class="creator-tip">
+					Pro tip: meme names get more hype. ALL CAPS = bonus points.
+				</div>
+			}
+			else if ( Stage == 1 )
+			{
+				<div class="creator-title">⌨️ CONTRACT COMPILER</div>
+				<div class="creator-subtitle">Wire each function to its implementation. Quality = how much of this you get right.</div>
+
+				<div class="puzzle-board">
+					<!-- Left column: function signatures -->
+					<div class="puzzle-col left">
+						@for ( int i = 0; i < _pairIndices.Count; i++ )
+						{
+							var slot = i;
+							<div class="node fn @(_selectedLeft == slot ? "picked" : "") @(_connections[slot] >= 0 ? "wired" : "")"
+								style="border-left: 4px solid @(WireColor(slot));"
+								onclick="@(() => SelectLeft(slot))">
+								@ContractPuzzle.AllPairs[_pairIndices[slot]].FunctionName
+							</div>
+						}
+					</div>
+
+					<!-- Right column: implementations, shuffled -->
+					<div class="puzzle-col right">
+						@for ( int i = 0; i < _rightOrder.Count; i++ )
+						{
+							var rightSlot = i;
+							int wiredLeft = WiredLeftFor( rightSlot );
+							<div class="node impl @(wiredLeft >= 0 ? "wired" : "")"
+								style="border-right: 4px solid @(wiredLeft >= 0 ? WireColor(wiredLeft) : "transparent");"
+								onclick="@(() => SelectRight(rightSlot))">
+								@ContractPuzzle.AllPairs[_rightOrder[rightSlot]].Implementation
+							</div>
+						}
+					</div>
+				</div>
+
+				<div class="puzzle-hint">
+					@(_selectedLeft >= 0 ? "Now click the implementation it belongs to." : "Click a function, then its implementation.")
+				</div>
+
+				<div class="launch-button @(AllWired() ? "" : "disabled")" onclick="@DoCompile">
+					🔨 COMPILE
+				</div>
+
+				<div class="creator-tip">Nobody reads the code. You could. That's your edge.</div>
+			}
+			else
+			{
+				<div class="creator-title">@ContractPuzzle.GetTierName( _score ) GRADE</div>
+				<div class="creator-subtitle">@_score / @ContractPuzzle.PuzzleSize functions correctly wired</div>
+
+				<div class="compile-flavor">@ContractPuzzle.GetTierFlavor( _score )</div>
+
+				<div class="launch-button" onclick="@DoLaunch">
+					🚀 LAUNCH $@(string.IsNullOrWhiteSpace(Ticker) ? "???" : Ticker.ToUpper())
+				</div>
+
+				<div class="launch-button retry" onclick="@GoToPuzzle">
+					🔁 REFACTOR (new contract)
+				</div>
+			}
 		</div>
 	}
 </root>
@@ -71,6 +137,7 @@
 @code
 {
 	public bool IsOpen { get; set; } = false;
+	public int Stage { get; set; } = 0;
 
 	private string TokenName { get; set; } = "";
 	private string Ticker { get; set; } = "";
@@ -84,9 +151,20 @@
 		"🌙", "💀", "🎰", "🧪"
 	};
 
+	// --- Puzzle state ---
+	private static readonly Random _rng = new();
+	private static readonly string[] WireColors = { "#ff4444", "#ffaa00", "#00ff41", "#44aaff", "#ff44ff" };
+
+	private List<int> _pairIndices = new();  // left slot -> index into ContractPuzzle.AllPairs
+	private List<int> _rightOrder = new();   // right slot -> index into ContractPuzzle.AllPairs (shuffled)
+	private int[] _connections = new int[ContractPuzzle.PuzzleSize]; // left slot -> right slot, -1 = unwired
+	private int _selectedLeft = -1;
+	private int _score;
+
 	public void Show()
 	{
 		IsOpen = true;
+		Stage = 0;
 		TokenName = "";
 		Ticker = "";
 		SelectedIcon = 0;
@@ -95,6 +173,81 @@
 	public void Hide()
 	{
 		IsOpen = false;
+	}
+
+	protected override void OnUpdate()
+	{
+		// TextEntry doesn't push edits back into our properties — pull them each frame
+		if ( !IsOpen || Stage != 0 ) return;
+		if ( NameEntry is not null ) TokenName = NameEntry.Text ?? "";
+		if ( TickerEntry is not null ) Ticker = TickerEntry.Text ?? "";
+	}
+
+	private void GoToPuzzle()
+	{
+		if ( string.IsNullOrWhiteSpace( TokenName ) ) return;
+		GeneratePuzzle();
+		Stage = 1;
+	}
+
+	private void GeneratePuzzle()
+	{
+		_pairIndices = Enumerable.Range( 0, ContractPuzzle.AllPairs.Length )
+			.OrderBy( _ => _rng.Next() )
+			.Take( ContractPuzzle.PuzzleSize )
+			.ToList();
+
+		_rightOrder = _pairIndices.OrderBy( _ => _rng.Next() ).ToList();
+
+		for ( int i = 0; i < _connections.Length; i++ )
+			_connections[i] = -1;
+		_selectedLeft = -1;
+		_score = 0;
+	}
+
+	private string WireColor( int leftSlot )
+		=> WireColors[leftSlot % WireColors.Length];
+
+	private int WiredLeftFor( int rightSlot )
+	{
+		for ( int i = 0; i < _connections.Length; i++ )
+			if ( _connections[i] == rightSlot ) return i;
+		return -1;
+	}
+
+	private void SelectLeft( int slot )
+	{
+		_selectedLeft = slot;
+	}
+
+	private void SelectRight( int rightSlot )
+	{
+		if ( _selectedLeft < 0 ) return;
+
+		// Steal the wire if another function already claimed this implementation
+		int prev = WiredLeftFor( rightSlot );
+		if ( prev >= 0 ) _connections[prev] = -1;
+
+		_connections[_selectedLeft] = rightSlot;
+		_selectedLeft = -1;
+	}
+
+	private bool AllWired()
+		=> _connections.All( c => c >= 0 );
+
+	private void DoCompile()
+	{
+		if ( !AllWired() ) return;
+
+		_score = 0;
+		for ( int left = 0; left < _pairIndices.Count; left++ )
+		{
+			int right = _connections[left];
+			if ( right >= 0 && _rightOrder[right] == _pairIndices[left] )
+				_score++;
+		}
+
+		Stage = 2;
 	}
 
 	private string GetHypeBar()
@@ -132,7 +285,7 @@
 		if ( string.IsNullOrWhiteSpace( TokenName ) ) return;
 
 		var tokenSys = TokenSystem.Instance;
-		tokenSys?.RequestCreateToken( TokenName, Ticker, SelectedIcon );
+		tokenSys?.RequestCreateToken( TokenName, Ticker, SelectedIcon, _score );
 
 		IsOpen = false;
 	}
@@ -143,7 +296,7 @@
 	.creator-root.closed { display: none; }
 
 	.creator-frame {
-		width: 420px;
+		width: 560px;
 		background-color: rgba(0, 10, 0, 0.95);
 		border: 2px solid #ffaa00;
 		border-radius: 12px;
@@ -176,9 +329,10 @@
 	.hype-preview {
 		padding: 8px; border: 1px solid rgba(255, 170, 0, 0.3); border-radius: 6px;
 		font-size: 12px; margin-bottom: 8px;
+		display: flex; flex-direction: row;
 	}
 	.hype-bar { color: #00ff41; letter-spacing: 2px; }
-	.hype-value { float: right; }
+	.hype-value { margin-left: auto; }
 
 	.cost-line { text-align: center; font-size: 12px; margin-bottom: 12px; }
 	.cost-amount { color: #ff4444; font-weight: bold; }
@@ -189,6 +343,32 @@
 		font-weight: bold; font-size: 16px; margin-bottom: 8px;
 	}
 	.launch-button:hover { background-color: rgba(255, 170, 0, 0.4); }
+	.launch-button.disabled { opacity: 0.3; pointer-events: none; }
+	.launch-button.retry { font-size: 12px; padding: 8px; opacity: 0.7; }
 
 	.creator-tip { font-size: 10px; text-align: center; opacity: 0.4; }
+
+	/* Contract puzzle */
+	.puzzle-board { display: flex; flex-direction: row; gap: 12px; margin-bottom: 8px; }
+	.puzzle-col { display: flex; flex-direction: column; gap: 6px; }
+	.puzzle-col.left { width: 200px; }
+	.puzzle-col.right { flex: 1; }
+
+	.node {
+		padding: 8px; border: 1px solid rgba(255, 170, 0, 0.3); border-radius: 4px;
+		cursor: pointer; font-size: 10px; background: rgba(0, 20, 0, 0.6);
+	}
+	.node:hover { background-color: rgba(255, 170, 0, 0.12); }
+	.node.fn { font-weight: bold; color: #44aaff; }
+	.node.fn.picked { background-color: rgba(68, 170, 255, 0.25); border-color: #44aaff; }
+	.node.impl { color: #00ff41; opacity: 0.85; }
+	.node.wired { opacity: 1; }
+
+	.puzzle-hint { font-size: 10px; text-align: center; opacity: 0.5; margin-bottom: 8px; }
+
+	.compile-flavor {
+		text-align: center; font-size: 13px; color: #00ff41;
+		padding: 16px; margin-bottom: 12px;
+		border: 1px solid rgba(0, 255, 65, 0.3); border-radius: 6px;
+	}
 </style>

@@ -158,10 +158,10 @@ public sealed class MarketManipulation : Component
 		_activePumps[pumpId] = new PumpGroupData
 		{
 			TokenId = tokenId,
-			InitiatorId = caller.SteamId,
+			InitiatorId = player.Id,
 			TimeRemaining = PumpGroupDuration,
 			BoostPerSecond = PumpGroupBoost,
-			Participants = new List<Guid> { caller.SteamId }
+			Participants = new List<Guid> { player.Id }
 		};
 		ActivePumpGroups++;
 		LatestPumpId = pumpId.ToString();
@@ -186,7 +186,7 @@ public sealed class MarketManipulation : Component
 		var wallet = player.Components.Get<CryptoWallet>();
 		if ( wallet is null || !wallet.TrySpend( PumpGroupCost * 0.5f ) ) return; // Half price to join
 
-		pump.Participants.Add( caller.SteamId );
+		pump.Participants.Add( player.Id );
 		pump.BoostPerSecond += PumpGroupBoost * 0.5f; // Each joiner adds 50% more boost
 
 		var sec = Scene.GetAllComponents<SECSystem>().FirstOrDefault();
@@ -321,9 +321,20 @@ public sealed class MarketManipulation : Component
 			.FirstOrDefault( p => p.Network.Owner == caller );
 	}
 
-	[Rpc.Owner]
+	/// <summary>Send a message to one specific player's client.</summary>
 	private void NotifyPlayer( Connection target, string message )
 	{
+		using ( Rpc.FilterInclude( c => c == target ) )
+		{
+			ClientNotify( message );
+		}
+	}
+
+	[Rpc.Broadcast]
+	private void ClientNotify( string message )
+	{
 		Log.Info( message );
+		var feed = Scene.GetAllComponents<UI.NotificationFeed>().FirstOrDefault();
+		feed?.PushNotification( "MARKET", message, "negative" );
 	}
 }

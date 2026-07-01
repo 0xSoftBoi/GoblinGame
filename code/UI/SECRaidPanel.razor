@@ -36,6 +36,15 @@
 				<div class="raid-title">🚨 YOU'RE BEING RAIDED 🚨</div>
 				<div class="raid-subtitle">SEC agents are at your desk. You have @sec.RaidTimer.ToString("F0") seconds.</div>
 
+				<div class="auditor-card">
+					<div class="auditor-portrait">🧐</div>
+					<div class="auditor-info">
+						<div class="auditor-name">@SECSystem.AuditorName</div>
+						<div class="auditor-title">@SECSystem.AuditorTitle</div>
+						<div class="auditor-quip">@sec.AuditorQuip</div>
+					</div>
+				</div>
+
 				<div class="raid-timer">
 					<div class="raid-timer-fill" style="width: @((sec.RaidTimer / 15f * 100).ToString("F0"))%"></div>
 				</div>
@@ -57,6 +66,18 @@
 						<div class="rc-icon">👉</div>
 						<div class="rc-title">BLAME ANOTHER GOBLIN</div>
 						<div class="rc-desc">Point the finger. Only works if they have SEC heat.</div>
+					</div>
+
+					<div class="raid-choice hide" onclick="@(() => Choose(RaidAction.Hide, Guid.Empty))">
+						<div class="rc-icon">🫥</div>
+						<div class="rc-title">HIDE</div>
+						<div class="rc-desc">Server room. 50/50 they leave. If found: full fine, zero dignity.</div>
+					</div>
+
+					<div class="raid-choice flee" onclick="@(() => Choose(RaidAction.Flee, Guid.Empty))">
+						<div class="rc-icon">🏃</div>
+						<div class="rc-title">FLEE</div>
+						<div class="rc-desc">Fire exit. You escape. Your token bags don't.</div>
 					</div>
 
 					<div class="raid-choice accept" onclick="@(() => Choose(RaidAction.AcceptFate, Guid.Empty))">
@@ -162,7 +183,21 @@
 	}
 	.raid-choice:hover { transform: scale(1.05); }
 
+	.auditor-card {
+		display: flex; flex-direction: row; gap: 12px; align-items: center;
+		padding: 10px 12px; margin-bottom: 14px;
+		border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 8px;
+		background: rgba(255, 255, 255, 0.04);
+	}
+	.auditor-portrait { font-size: 36px; }
+	.auditor-info { display: flex; flex-direction: column; gap: 2px; }
+	.auditor-name { font-size: 13px; font-weight: bold; color: #ffcc00; letter-spacing: 1px; }
+	.auditor-title { font-size: 9px; opacity: 0.5; }
+	.auditor-quip { font-size: 11px; color: #ccc; margin-top: 4px; }
+
 	.shred { border: 2px solid #ffaa00; background: rgba(255, 170, 0, 0.1); }
+	.hide { border: 2px solid #44aaff; background: rgba(68, 170, 255, 0.1); }
+	.flee { border: 2px solid #ff44ff; background: rgba(255, 68, 255, 0.1); }
 	.bribe { border: 2px solid #00ff41; background: rgba(0, 255, 65, 0.1); }
 	.blame { border: 2px solid #ff8800; background: rgba(255, 136, 0, 0.1); }
 	.accept { border: 2px solid #888; background: rgba(100, 100, 100, 0.1); }

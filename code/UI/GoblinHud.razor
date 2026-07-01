@@ -50,6 +50,13 @@
 			<span class="wlabel">GBC PRICE</span>
 			<span class="wvalue price">$@GbcPrice.ToString("F3")</span>
 		</div>
+		<div class="wallet-row">
+			<span class="wlabel">SEC HEAT</span>
+			<span class="wvalue heat @HeatClass">@LocalHeat.ToString("N0") / 100</span>
+		</div>
+		<div class="heat-bar">
+			<div class="heat-fill @HeatClass" style="width: @(System.Math.Clamp(LocalHeat, 0f, 100f).ToString("F0"))%"></div>
+		</div>
 	</div>
 
 	<!-- ═══ LEADERBOARD (top-right) ═══ -->
@@ -265,6 +272,21 @@
 }
 .wvalue.hash  { color: #00ff88; }
 .wvalue.price { color: #ffcc00; }
+.wvalue.heat.heat-cool { color: #888; }
+.wvalue.heat.heat-warm { color: #ffaa00; }
+.wvalue.heat.heat-critical { color: #ff4444; }
+
+.heat-bar {
+	height: 5px;
+	background: rgba(255, 255, 255, 0.08);
+	border-radius: 3px;
+	overflow: hidden;
+	margin-top: 2px;
+}
+.heat-fill { height: 100%; transition: width 0.4s ease; }
+.heat-fill.heat-cool { background-color: #446644; }
+.heat-fill.heat-warm { background-color: #ffaa00; }
+.heat-fill.heat-critical { background-color: #ff4444; }
 
 /* ─── LEADERBOARD ─── */
 
@@ -448,8 +470,8 @@
 
 	public string PhaseClass => CurrentPhase.ToLower() switch
 	{
-		"mining" => "mining",
-		"trading" => "trading",
+		"create" => "mining",   // reuse the green "build stuff" styling
+		"shill" => "trading",   // reuse the gold "market open" styling
 		"chaos" => "chaos",
 		"results" => "results",
 		"pregame" => "pregame",
@@ -483,9 +505,9 @@
 
 	public string PhaseHint => CurrentPhase switch
 	{
-		"MINING" => "[E] Place rigs · Stack hash rate · Ignore the burning smell",
-		"TRADING" => "[T] Trade with players · Trust no one · Especially the ones who say 'trust me'",
-		"CHAOS" => "All EMPs are armed · The Blockchain Council has left the chat",
+		"CREATE" => "[C] Launch a token · [E] Place rigs · Nobody reads the contract. You could.",
+		"SHILL" => "[T] GoblinTwitter · Shill hard · The feed IS the market",
+		"CHAOS" => "[Q] EMPs armed · Rug window open · The Blockchain Council has left the chat",
 		"PREGAME" => "Someone's already arguing about tokenomics...",
 		"RESULTS" => "The blockchain has spoken. No refunds.",
 		_ => "Goblins are filing into Sector 7G..."
@@ -530,7 +552,18 @@
 		HashRate = w.HashRate;
 		RigCount = w.MiningRigs;
 		TotalMined = w.TotalMined;
+
+		LocalHeat = local.Components.Get<SECHeatComponent>()?.Heat ?? 0f;
 	}
+
+	public float LocalHeat { get; set; } = 0f;
+
+	public string HeatClass => LocalHeat switch
+	{
+		>= 70f => "heat-critical",
+		>= 40f => "heat-warm",
+		_ => "heat-cool"
+	};
 
 	private void PullMarketData()
 	{
@@ -543,12 +576,20 @@
 
 	private void PullLeaderboard()
 	{
+		// Show Shadow-Wallet-adjusted balances (the Rugger's stack reads low)
+		var publicBalances = SocialDeduction.Instance?.PublicBalances;
+
 		Players = Scene.GetAllComponents<CryptoWallet>()
-			.Select( w => new PlayerInfo(
-				w.OwnerName,
-				w.GoblinCoin,
-				!w.IsProxy && !w.IsBot
-			) )
+			.Select( w =>
+			{
+				float balance = w.GoblinCoin;
+				var gp = w.Components.Get<GoblinPlayer>();
+				if ( gp is not null && publicBalances is not null
+					&& publicBalances.TryGetValue( gp.Id, out float pub ) )
+					balance = pub;
+
+				return new PlayerInfo( w.OwnerName, balance, !w.IsProxy && !w.IsBot );
+			} )
 			.OrderByDescending( p => p.Balance )
 			.Take( 8 )
 			.ToList();

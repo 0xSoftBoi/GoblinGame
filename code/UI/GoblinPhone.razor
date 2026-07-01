@@ -24,6 +24,10 @@
 				<div class="tab @(CurrentTab == "compose" ? "active" : "")" onclick="@(() => CurrentTab = "compose")">POST</div>
 				<div class="tab @(CurrentTab == "portfolio" ? "active" : "")" onclick="@(() => CurrentTab = "portfolio")">BAGS</div>
 				<div class="tab @(CurrentTab == "market" ? "active" : "")" onclick="@(() => CurrentTab = "market")">DEGEN</div>
+				@if ( SocialDeduction.LocalIsRugger )
+				{
+					<div class="tab rugger-tab @(CurrentTab == "rugger" ? "active" : "")" onclick="@(() => CurrentTab = "rugger")">🎭</div>
+				}
 			</div>
 
 			<!-- Content area -->
@@ -48,6 +52,10 @@
 				else if ( CurrentTab == "market" )
 				{
 					@RenderMarket()
+				}
+				else if ( CurrentTab == "rugger" && SocialDeduction.LocalIsRugger )
+				{
+					@RenderRugger()
 				}
 
 			</div>
@@ -77,6 +85,13 @@
 		IsOpen = !IsOpen;
 		if ( IsOpen )
 			CurrentTab = "feed";
+	}
+
+	protected override void OnUpdate()
+	{
+		// TextEntry doesn't push edits back into our field — pull it each frame
+		if ( IsOpen && CurrentTab == "compose" && CustomTextEntry is not null )
+			_customText = CustomTextEntry.Text ?? "";
 	}
 
 	// ═══════════════════════════════════════
@@ -155,11 +170,20 @@
 
 	private RenderFragment RenderComposer()
 	{
+		EnsureHands();
+
 		var tokenSys = TokenSystem.Instance;
 		var tokens = tokenSys?.GetActiveTokensSorted() ?? new();
 
 		float effectiveness = ShillTemplates.CalculateEffectiveness( _openerIdx, _claimIdx, _proofIdx, _ctaIdx, 1f );
 		float risk = ShillTemplates.CalculateRisk( _openerIdx, _claimIdx, _proofIdx, _ctaIdx );
+
+		string previewTicker = "???";
+		foreach ( var t in tokens )
+			if ( t.Id == _selectedTokenId ) previewTicker = t.Ticker;
+
+		string previewText = ShillTemplates.AssemblePostText(
+			_openerIdx, _claimIdx, _proofIdx, _ctaIdx, previewTicker, _customText );
 
 		return @<div class="composer">
 			<div class="compose-header">COMPOSE SHILL</div>
@@ -181,12 +205,12 @@
 
 			<!-- Opener -->
 			<div class="field">
-				<label>HYPE OPENER:</label>
+				<label>HYPE OPENER: <span class="reroll" onclick="@(() => RerollHand(0))">🎲 REROLL</span></label>
 				<div class="component-picker">
-					@for ( int i = 0; i < ShillTemplates.HypeOpeners.Length; i++ )
+					@foreach ( var i in _openerHand )
 					{
 						var idx = i;
-						var c = ShillTemplates.HypeOpeners[i];
+						var c = ShillTemplates.HypeOpeners[idx];
 						<div class="component @(_openerIdx == idx ? "selected" : "")"
 							onclick="@(() => _openerIdx = idx)">
 							@c.Text
@@ -197,12 +221,12 @@
 
 			<!-- Claim -->
 			<div class="field">
-				<label>CLAIM:</label>
+				<label>CLAIM: <span class="reroll" onclick="@(() => RerollHand(1))">🎲 REROLL</span></label>
 				<div class="component-picker">
-					@for ( int i = 0; i < ShillTemplates.Claims.Length; i++ )
+					@foreach ( var i in _claimHand )
 					{
 						var idx = i;
-						var c = ShillTemplates.Claims[i];
+						var c = ShillTemplates.Claims[idx];
 						<div class="component @(_claimIdx == idx ? "selected" : "")"
 							onclick="@(() => _claimIdx = idx)">
 							@c.Text
@@ -213,12 +237,12 @@
 
 			<!-- Social Proof -->
 			<div class="field">
-				<label>SOCIAL PROOF:</label>
+				<label>SOCIAL PROOF: <span class="reroll" onclick="@(() => RerollHand(2))">🎲 REROLL</span></label>
 				<div class="component-picker">
-					@for ( int i = 0; i < ShillTemplates.SocialProofs.Length; i++ )
+					@foreach ( var i in _proofHand )
 					{
 						var idx = i;
-						var c = ShillTemplates.SocialProofs[i];
+						var c = ShillTemplates.SocialProofs[idx];
 						<div class="component @(_proofIdx == idx ? "selected" : "")"
 							onclick="@(() => _proofIdx = idx)">
 							@c.Text
@@ -229,12 +253,12 @@
 
 			<!-- CTA -->
 			<div class="field">
-				<label>CALL TO ACTION:</label>
+				<label>CALL TO ACTION: <span class="reroll" onclick="@(() => RerollHand(3))">🎲 REROLL</span></label>
 				<div class="component-picker">
-					@for ( int i = 0; i < ShillTemplates.CTAs.Length; i++ )
+					@foreach ( var i in _ctaHand )
 					{
 						var idx = i;
-						var c = ShillTemplates.CTAs[i];
+						var c = ShillTemplates.CTAs[idx];
 						<div class="component @(_ctaIdx == idx ? "selected" : "")"
 							onclick="@(() => _ctaIdx = idx)">
 							@c.Text
@@ -248,6 +272,12 @@
 				<label>PERSONAL TOUCH (80 chars):</label>
 				<TextEntry @ref="CustomTextEntry" Text="@_customText" MaxLength=80
 					class="custom-text" />
+			</div>
+
+			<!-- Live tweet preview -->
+			<div class="tweet-preview">
+				<div class="tweet-preview-label">PREVIEW</div>
+				<div class="tweet-preview-body">@previewText</div>
 			</div>
 
 			<!-- Stats preview -->
@@ -265,6 +295,55 @@
 	}
 
 	private TextEntry CustomTextEntry;
+
+	// ═══════════════════════════════════════
+	//  COMPOSER HANDS (5 random options per slot, rerollable)
+	// ═══════════════════════════════════════
+
+	private const int HandSize = 5;
+	private static readonly Random _handRng = new();
+	private int[] _openerHand;
+	private int[] _claimHand;
+	private int[] _proofHand;
+	private int[] _ctaHand;
+
+	private void EnsureHands()
+	{
+		if ( _openerHand is not null ) return;
+		for ( int slot = 0; slot < 4; slot++ )
+			RerollHand( slot );
+	}
+
+	private void RerollHand( int slot )
+	{
+		int poolSize = slot switch
+		{
+			0 => ShillTemplates.HypeOpeners.Length,
+			1 => ShillTemplates.Claims.Length,
+			2 => ShillTemplates.SocialProofs.Length,
+			_ => ShillTemplates.CTAs.Length
+		};
+
+		var hand = DrawHand( poolSize );
+		switch ( slot )
+		{
+			case 0: _openerHand = hand; _openerIdx = hand[0]; break;
+			case 1: _claimHand = hand; _claimIdx = hand[0]; break;
+			case 2: _proofHand = hand; _proofIdx = hand[0]; break;
+			default: _ctaHand = hand; _ctaIdx = hand[0]; break;
+		}
+	}
+
+	private static int[] DrawHand( int poolSize )
+	{
+		int count = Math.Min( HandSize, poolSize );
+		var picked = new System.Collections.Generic.HashSet<int>();
+		while ( picked.Count < count )
+			picked.Add( _handRng.Next( poolSize ) );
+		var hand = new int[count];
+		picked.CopyTo( hand );
+		return hand;
+	}
 
 	// ═══════════════════════════════════════
 	//  PORTFOLIO TAB
@@ -420,6 +499,63 @@
 			</div>
 
 		</div>;
+	}
+
+	// ═══════════════════════════════════════
+	//  RUGGER TAB (secret — only rendered on the Rugger's client)
+	// ═══════════════════════════════════════
+
+	private RenderFragment RenderRugger()
+	{
+		var sd = SocialDeduction.Instance;
+		var localPlayer = GoblinPlayer.All.FirstOrDefault( p => !p.IsProxy );
+		var wallet = localPlayer?.Components.Get<CryptoWallet>();
+
+		if ( sd is null || wallet is null )
+			return @<div class="empty-feed">...</div>;
+
+		float totalGBC = 0f;
+		foreach ( var w in Scene.GetAllComponents<CryptoWallet>() )
+			totalGBC += w.GoblinCoin;
+
+		float share = totalGBC > 0f ? wallet.GoblinCoin / totalGBC : 0f;
+		bool canGrandRug = share >= sd.GrandRugThreshold && !sd.GrandRugTriggered && !sd.RuggerExposed;
+
+		return @<div class="rugger-panel">
+			<div class="rugger-header">🎭 YOU ARE THE RUGGER</div>
+			<div class="rugger-sub">This tab does not exist. You were never here.</div>
+
+			<div class="rugger-stat">
+				<span>YOUR SHARE OF ALL GBC</span>
+				<span class="rugger-share @(canGrandRug ? "ready" : "")">@((share * 100f).ToString("F1"))%</span>
+			</div>
+			<div class="rugger-stat">
+				<span>GRAND RUG UNLOCKS AT</span>
+				<span>@((sd.GrandRugThreshold * 100f).ToString("F0"))%</span>
+			</div>
+
+			<div class="rugger-perks">
+				<div class="rugger-perk">👻 Shadow Wallet: the leaderboard shows @((sd.ShadowWalletHidePercent * 100f).ToString("F0"))% less than you hold</div>
+				<div class="rugger-perk">📣 Hidden shill boost: your posts hit 20% harder</div>
+			</div>
+
+			@if ( sd.RuggerExposed )
+			{
+				<div class="rugger-exposed">⚖️ EXPOSED. The perks are gone. The shame is forever.</div>
+			}
+			else
+			{
+				<div class="grand-rug-button @(canGrandRug ? "" : "disabled")" onclick="@DoGrandRug">
+					💥 GRAND RUG — TAKE IT ALL
+				</div>
+				<div class="rugger-warning">Ends the match. Halves every other goblin's stack. No takebacks.</div>
+			}
+		</div>;
+	}
+
+	private void DoGrandRug()
+	{
+		SocialDeduction.Instance?.RequestGrandRug();
 	}
 
 	private void DoWashTrade( Guid tokenId )
@@ -585,7 +721,7 @@
 	/* Composer */
 	.compose-header { font-weight: bold; text-align: center; padding: 8px; font-size: 14px; }
 	.field { margin-bottom: 8px; }
-	.field label { font-size: 10px; font-weight: bold; display: block; margin-bottom: 2px; opacity: 0.7; }
+	.field label { font-size: 10px; font-weight: bold; display: flex; flex-direction: row; margin-bottom: 2px; opacity: 0.7; }
 
 	.token-picker, .component-picker {
 		display: flex; flex-wrap: wrap; gap: 4px;
@@ -598,6 +734,26 @@
 	.token-option.selected, .component.selected {
 		background-color: rgba(0, 255, 65, 0.3); border-color: #00ff41;
 	}
+
+	.reroll {
+		margin-left: auto;
+		font-size: 9px;
+		color: #ffaa00;
+		cursor: pointer;
+		opacity: 0.8;
+		letter-spacing: 1px;
+	}
+	.reroll:hover { opacity: 1; }
+
+	.tweet-preview {
+		border: 1px solid rgba(0, 255, 65, 0.25);
+		border-radius: 6px;
+		padding: 8px;
+		margin-bottom: 8px;
+		background: rgba(0, 30, 0, 0.5);
+	}
+	.tweet-preview-label { font-size: 9px; letter-spacing: 2px; opacity: 0.5; margin-bottom: 4px; }
+	.tweet-preview-body { font-size: 11px; line-height: 1.4; color: #ccffcc; white-space: pre-wrap; }
 
 	.custom-text {
 		width: 100%; background: rgba(0, 20, 0, 0.8); border: 1px solid #00ff41;
@@ -637,6 +793,29 @@
 	.port-val.green { color: #00ff88; }
 	.port-val.red { color: #ff4444; }
 	.port-pct { font-size: 10px; opacity: 0.5; min-width: 32px; text-align: right; }
+
+	/* Rugger tab */
+	.tab.rugger-tab { color: #ff44ff; }
+	.rugger-panel { display: flex; flex-direction: column; gap: 8px; padding: 6px; }
+	.rugger-header { font-size: 16px; font-weight: bold; color: #ff44ff; text-align: center; padding: 8px; }
+	.rugger-sub { font-size: 9px; color: #666; text-align: center; margin-bottom: 8px; }
+	.rugger-stat {
+		display: flex; justify-content: space-between; font-size: 11px;
+		padding: 6px 8px; border: 1px solid rgba(255,68,255,0.2); border-radius: 4px;
+	}
+	.rugger-share { font-weight: bold; color: #ffaa00; }
+	.rugger-share.ready { color: #ff44ff; }
+	.rugger-perks { display: flex; flex-direction: column; gap: 4px; margin: 4px 0; }
+	.rugger-perk { font-size: 10px; color: #888; }
+	.grand-rug-button {
+		text-align: center; padding: 14px; margin-top: 8px;
+		background: rgba(255,68,255,0.15); border: 2px solid #ff44ff; border-radius: 8px;
+		color: #ff44ff; font-weight: bold; font-size: 14px; cursor: pointer;
+	}
+	.grand-rug-button:hover { background: rgba(255,68,255,0.35); }
+	.grand-rug-button.disabled { opacity: 0.25; pointer-events: none; }
+	.rugger-warning { font-size: 9px; color: #ff4444; text-align: center; }
+	.rugger-exposed { font-size: 12px; color: #ff4444; text-align: center; padding: 12px; }
 
 	/* Market / Degen tab */
 	.market-panel { display: flex; flex-direction: column; gap: 10px; padding: 4px; }

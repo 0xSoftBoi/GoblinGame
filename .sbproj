@@ -28,6 +28,28 @@
       "DefineConstants": "SANDBOX;ADDON;DEBUG"
     },
     "CsProjName": "",
-    "StartScene": "scenes/menu.scene"
+    "StartScene": "scenes/menu.scene",
+    "InputSettings": {
+      "Actions": [
+        { "Name": "Forward", "KeyboardCode": "W", "GamepadCode": "None", "GroupName": "Movement" },
+        { "Name": "Backward", "KeyboardCode": "S", "GamepadCode": "None", "GroupName": "Movement" },
+        { "Name": "Left", "KeyboardCode": "A", "GamepadCode": "None", "GroupName": "Movement" },
+        { "Name": "Right", "KeyboardCode": "D", "GamepadCode": "None", "GroupName": "Movement" },
+        { "Name": "Jump", "KeyboardCode": "space", "GamepadCode": "A", "GroupName": "Movement" },
+        { "Name": "Run", "KeyboardCode": "shift", "GamepadCode": "None", "GroupName": "Movement" },
+        { "Name": "Crouch", "KeyboardCode": "ctrl", "GamepadCode": "None", "GroupName": "Movement" },
+        { "Name": "Use", "KeyboardCode": "e", "GamepadCode": "X", "GroupName": "Actions" },
+        { "Name": "Trade", "KeyboardCode": "t", "GamepadCode": "None", "GroupName": "Goblin Economy" },
+        { "Name": "AltTrade", "KeyboardCode": "y", "GamepadCode": "None", "GroupName": "Goblin Economy" },
+        { "Name": "OpenMarket", "KeyboardCode": "m", "GamepadCode": "None", "GroupName": "Goblin Economy" },
+        { "Name": "CreateToken", "KeyboardCode": "c", "GamepadCode": "None", "GroupName": "Goblin Economy" },
+        { "Name": "CycleToken", "KeyboardCode": "tab", "GamepadCode": "None", "GroupName": "Goblin Economy" },
+        { "Name": "Sabotage", "KeyboardCode": "q", "GamepadCode": "None", "GroupName": "Chaos" },
+        { "Name": "PlaceRig", "KeyboardCode": "e", "GamepadCode": "None", "GroupName": "Chaos" },
+        { "Name": "CallAudit", "KeyboardCode": "v", "GamepadCode": "None", "GroupName": "Chaos" },
+        { "Name": "Voice", "KeyboardCode": "b", "GamepadCode": "None", "GroupName": "Comms" },
+        { "Name": "Menu", "KeyboardCode": "escape", "GamepadCode": "None", "GroupName": "Comms" }
+      ]
+    }
   }
 }

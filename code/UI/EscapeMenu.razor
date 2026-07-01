@@ -215,13 +215,13 @@
 
 	void ChangeSens( float delta )
 	{
-		_sensitivity = MathF.Round( MathF.Clamp( _sensitivity + delta, 0.1f, 5.0f ), 1 );
+		_sensitivity = MathF.Round( Math.Clamp( _sensitivity + delta, 0.1f, 5.0f ), 1 );
 		GameSettings.MouseSensitivity = _sensitivity;
 	}
 
 	void ChangeVolume( float delta )
 	{
-		_volume = MathF.Round( MathF.Clamp( _volume + delta, 0f, 1.0f ), 1 );
+		_volume = MathF.Round( Math.Clamp( _volume + delta, 0f, 1.0f ), 1 );
 		GameSettings.MasterVolume = _volume;
 	}
 

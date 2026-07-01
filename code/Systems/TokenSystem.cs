@@ -58,7 +58,7 @@ public sealed class TokenSystem : Component
 	// ═══════════════════════════════════════
 
 	[Rpc.Host]
-	public void RequestCreateToken( string name, string ticker, int iconIndex )
+	public void RequestCreateToken( string name, string ticker, int iconIndex, int puzzleScore )
 	{
 		var caller = Rpc.Caller;
 
@@ -116,9 +116,13 @@ public sealed class TokenSystem : Component
 			return;
 		}
 
-		// Calculate initial price from name "hype" + randomness
+		// Contract puzzle score sets quality tier (Scam → Blue Chip)
+		puzzleScore = Math.Clamp( puzzleScore, 0, ContractPuzzle.PuzzleSize );
+		float quality = ContractPuzzle.ScoreToQuality( puzzleScore, _rng );
+
+		// Calculate initial price from name "hype" + contract quality
 		float nameHype = CalculateNameHype( name );
-		float initialPrice = BaseTokenPrice * (0.5f + nameHype * 1.5f);
+		float initialPrice = BaseTokenPrice * (0.5f + nameHype * 1.5f) * (0.75f + quality / 200f);
 
 		// Create token
 		var token = new TokenData
@@ -129,7 +133,7 @@ public sealed class TokenSystem : Component
 			IconIndex = iconIndex,
 			CreatorId = player.Id,
 			CreatorName = caller.DisplayName,
-			Quality = 50f + _rng.Next( -20, 30 ),
+			Quality = quality,
 			Price = initialPrice,
 			PreviousPrice = initialPrice,
 			Supply = 1000000f,
@@ -149,9 +153,9 @@ public sealed class TokenSystem : Component
 		// Creator auto-holds some tokens
 		wallet.AddTokenHolding( token.Id, 100000f );
 
-		BroadcastTokenCreated( caller.DisplayName, name, ticker, initialPrice );
+		BroadcastTokenCreated( caller.DisplayName, name, ticker, initialPrice, ContractPuzzle.GetTierName( puzzleScore ) );
 
-		Log.Info( $"TOKEN CREATED: ${ticker} ({name}) by {caller.DisplayName} at {initialPrice:F3} GBC" );
+		Log.Info( $"TOKEN CREATED: ${ticker} ({name}) by {caller.DisplayName} at {initialPrice:F3} GBC — {ContractPuzzle.GetTierName( puzzleScore )} grade" );
 	}
 
 	// ═══════════════════════════════════════
@@ -166,6 +170,14 @@ public sealed class TokenSystem : Component
 
 		var player = FindPlayer( caller );
 		if ( player is null ) return;
+
+		// Rugging is a live-market crime: Shill or Chaos phase only
+		var state = GameStateManager.Instance;
+		if ( state is not null && state.CurrentPhase != GamePhase.Shill && state.CurrentPhase != GamePhase.Chaos )
+		{
+			Log.Warning( $"{caller.DisplayName} tried to rug outside Shill/Chaos" );
+			return;
+		}
 
 		// Only creator can rug
 		if ( token.CreatorId != player.Id )
@@ -196,7 +208,7 @@ public sealed class TokenSystem : Component
 		foreach ( var w in Scene.GetAllComponents<CryptoWallet>() )
 		{
 			if ( w != wallet )
-				w.RemoveTokenHolding( tokenId );
+				w.RemoveTokenHolding( tokenId, float.MaxValue );
 		}
 
 		// Reputation hit
@@ -509,13 +521,13 @@ public sealed class TokenSystem : Component
 	// ═══════════════════════════════════════
 
 	[Rpc.Broadcast]
-	private void BroadcastTokenCreated( string creator, string name, string ticker, float price )
+	private void BroadcastTokenCreated( string creator, string name, string ticker, float price, string tier )
 	{
 		Sound.Play( "sounds/event_positive.sound" );
-		Log.Info( $"NEW TOKEN: ${ticker} ({name}) by {creator} — Price: {price:F3} GBC" );
+		Log.Info( $"NEW TOKEN: ${ticker} ({name}) by {creator} — Price: {price:F3} GBC — {tier} grade" );
 
 		var feed = Scene.GetAllComponents<UI.NotificationFeed>().FirstOrDefault();
-		feed?.PushNotification( "NEW LISTING", $"{creator} launched ${ticker}!", "positive" );
+		feed?.PushNotification( "NEW LISTING", $"{creator} launched ${ticker} ({tier} grade)!", "positive" );
 	}
 
 	[Rpc.Broadcast]

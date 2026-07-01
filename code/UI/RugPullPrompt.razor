@@ -93,13 +93,20 @@
 		IsVisible = false;
 	}
 
+	// The classic post-scandal rebrand playbook, in ascending order of desperation
+	private static readonly string[] PivotSuffixes =
+	{
+		" 2.0", " V2 (Audited)", " Classic", " Pro", " AI", " DAO",
+		" (Real)", " Reborn", " Finance", " Green", " Trust Edition",
+	};
+
 	private void DoPivot()
 	{
-		// Simple pivot — keep same name for now (could add rename UI)
 		var token = MyToken;
 		if ( token is not null )
 		{
-			TokenSystem.Instance?.RequestPivot( MyTokenId, token.Value.Name + " V2", token.Value.Ticker );
+			var suffix = PivotSuffixes[new System.Random().Next( PivotSuffixes.Length )];
+			TokenSystem.Instance?.RequestPivot( MyTokenId, token.Value.Name + suffix, token.Value.Ticker );
 		}
 		IsVisible = false;
 	}

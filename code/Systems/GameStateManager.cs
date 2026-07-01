@@ -121,6 +121,8 @@ public sealed class GameStateManager : Component
 				}
 				else
 				{
+					// Sweep rugged/dead tokens off the board between rounds
+					Scene.GetAllComponents<TokenSystem>().FirstOrDefault()?.CleanupRound();
 					CurrentRound++;
 					TransitionTo( GamePhase.Create, CreatePhaseDuration );
 				}
@@ -290,7 +292,7 @@ public sealed class GameStateManager : Component
 			_ => "LEAST BROKE GOBLIN"
 		};
 
-		// Check if rugger won (extra title)
+		// Check if rugger won (extra title) + publish the reveal for the results screen
 		var deduction = Scene.GetAllComponents<SocialDeduction>().FirstOrDefault();
 		if ( deduction is not null )
 		{
@@ -298,6 +300,8 @@ public sealed class GameStateManager : Component
 				.FirstOrDefault( p => p.Network.Owner == richest.Network.Owner );
 			if ( richestPlayer is not null && deduction.IsRugger( richestPlayer ) )
 				WinnerTitle = "MASTER RUGGER 🎭";
+
+			deduction.RevealRugger();
 		}
 
 		Log.Info( $"WINNER: {WinnerName} — {WinnerTitle} — {totalValue:N1} GBC portfolio!" );

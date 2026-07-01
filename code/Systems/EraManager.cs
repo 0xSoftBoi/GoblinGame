@@ -13,11 +13,11 @@ public sealed class EraManager : Component
 {
 	public static EraManager Instance { get; private set; }
 
-	// Round → era mapping (MaxRounds=5):
-	//   Round 1-2 → Era 0: Stealth Startup
-	//   Round 3   → Era 1: Growth Hacking
-	//   Round 4   → Era 2: Bubble Territory
-	//   Round 5   → Era 3: The Dumpster
+	// Round → era mapping (MaxRounds=5). Names live in OfficeSetup.EraNames:
+	//   Round 1-2 → Era 0: Garage Startup
+	//   Round 3   → Era 1: Funded WeWork
+	//   Round 4   → Era 2: Crypto Exchange
+	//   Round 5   → Era 3: Penthouse Suite
 	private static readonly int[] EraByRound = { 0, 0, 1, 2, 3 };
 
 	// Volatile market params per era

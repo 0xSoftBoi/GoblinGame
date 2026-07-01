@@ -80,9 +80,18 @@ public sealed class TwitchIntegration : Component
 	{
 		if ( IsProxy ) return;
 
+		// Apply connection-state changes signaled by the IRC thread —
+		// [Sync] properties must only be written from the main thread
+		int pending = System.Threading.Interlocked.Exchange( ref _pendingConnState, 0 );
+		if ( pending == 1 ) IsConnected = true;
+		else if ( pending == 2 ) IsConnected = false;
+
 		DrainCommandQueue();
 		TickRaidVote();
 	}
+
+	// 0 = no change, 1 = connected, 2 = disconnected. Written by the IRC thread.
+	private int _pendingConnState = 0;
 
 	// ═══════════════════════════════════════
 	//  CONNECTION
@@ -123,7 +132,7 @@ public sealed class TwitchIntegration : Component
 			_writer.WriteLine( $"NICK goblinchain_bot" );
 			_writer.WriteLine( $"JOIN #{channel}" );
 
-			IsConnected = true;
+			System.Threading.Interlocked.Exchange( ref _pendingConnState, 1 );
 			Log.Info( $"[Twitch] Connected to #{channel}" );
 
 			string line;
@@ -162,7 +171,7 @@ public sealed class TwitchIntegration : Component
 		}
 		finally
 		{
-			IsConnected = false;
+			System.Threading.Interlocked.Exchange( ref _pendingConnState, 2 );
 		}
 	}
 

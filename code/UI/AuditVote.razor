@@ -45,25 +45,17 @@
                             }
                             else
                             {
-                                <div class="truth wrong">❌ They were INNOCENT! Accusers lose 500 GBC each!</div>
+                                <div class="truth wrong">❌ They were CLEAN! Guilty voters fined 500 GBC each!</div>
                             }
                         </div>
                     }
                     else
                     {
                         <div class="result innocent">
-                            <span class="accused">@AccusedName</span> was found INNOCENT.
-                            @if ( WasActuallyRugger )
-                            {
-                                <div class="truth wrong">😈 ...but they WERE the Rugger! They got away with it!</div>
-                            }
-                            else
-                            {
-                                <div class="truth correct">✅ Correct! They were clean.</div>
-                            }
+                            <span class="accused">@AccusedName</span> was ACQUITTED.
+                            <div class="truth">📕 The books stay closed. The truth stays buried.</div>
                         </div>
                     }
-                </div>
                 }
             </div>
         </div>
@@ -208,11 +200,36 @@
 
     public void ShowResult( bool majorityGuilty, bool wasRugger )
     {
+        IsVisible = true;
         Phase = AuditPhase.Result;
         WasGuilty = majorityGuilty;
         WasActuallyRugger = wasRugger;
+        _resultShownAt = Time.Now;
         StateHasChanged();
     }
+
+    private float _resultShownAt;
+
+    protected override void OnUpdate()
+    {
+        if ( !IsVisible ) return;
+
+        var sd = SocialDeduction.Instance;
+        if ( Phase == AuditPhase.Voting && sd is not null )
+        {
+            TimeLeft = (int)MathF.Max( 0f, sd.AuditVoteTimer );
+            GuiltyCount = sd.GuiltyVotes;
+            InnocentCount = sd.InnocentVotes;
+        }
+        else if ( Phase == AuditPhase.Result && Time.Now - _resultShownAt > 6f )
+        {
+            Hide();
+        }
+    }
+
+    protected override int BuildHash()
+        => System.HashCode.Combine( IsVisible, Phase, HasVoted,
+            GuiltyCount + InnocentCount * 100, TimeLeft, WasGuilty, WasActuallyRugger );
 
     public void Hide()
     {

@@ -29,6 +29,22 @@ public sealed class SECSystem : Component
 	[Sync] public string RaidTargetName { get; set; } = "";
 	[Sync] public float RaidTimer { get; set; } = 0f;
 	[Sync] public bool RaidResolved { get; set; } = false;
+	[Sync] public string AuditorQuip { get; set; } = "";
+
+	// The miniboss. Every raid is personally conducted by this goblin.
+	public const string AuditorName = "AUDITOR GRIMSBY LEDGERBANE";
+	public const string AuditorTitle = "Blockchain Council Enforcement Division (which doesn't exist)";
+
+	private static readonly string[] AuditorQuips = new[]
+	{
+		"He adjusts his monocle. 'Lovely wallet. Shame if someone... subpoenaed it.'",
+		"'I've read your tweets. All of them. Even the deleted ones. ESPECIALLY the deleted ones.'",
+		"'Wash trading, eh? The mop is in the evidence bag.'",
+		"'You have the right to remain volatile. Anything you shill can be used against you.'",
+		"'I audited SatoshiGoblin himself. He said good luck lol. YOU won't be so lucky.'",
+		"'Section 7, paragraph G: no. Just... no. All of this. No.'",
+		"'My last three raids paid for my summer cave. Keep it up.'",
+	};
 
 	private Random _rng = new();
 
@@ -149,6 +165,7 @@ public sealed class SECSystem : Component
 		RaidTargetId = target.Id;
 		RaidTargetName = target.Network.Owner?.DisplayName ?? "???";
 		RaidTimer = 15f; // 15 seconds to decide
+		AuditorQuip = AuditorQuips[_rng.Next( AuditorQuips.Length )];
 
 		var heat = target.Components.Get<SECHeatComponent>();
 		if ( heat is not null ) heat.IsBeingRaided = true;
@@ -254,6 +271,45 @@ public sealed class SECSystem : Component
 				// Blame failed — fall through to accept fate
 				goto case RaidAction.AcceptFate;
 
+			case RaidAction.Hide:
+				// Dive under the desk. 50/50: they leave, or they find you and it's worse.
+				if ( _rng.NextDouble() < 0.5 )
+				{
+					if ( heat is not null ) heat.Heat = RaidThreshold * 0.9f; // They'll be back
+					result = $"{targetName} hid in the server room! {AuditorName} left a sticky note: 'BE BACK SOON.'";
+					BroadcastRaidResult( result, true );
+				}
+				else
+				{
+					float hideFine = (wallet?.GoblinCoin ?? 0) * RaidFinePercent;
+					if ( wallet is not null ) wallet.GoblinCoin -= hideFine;
+					if ( heat is not null ) { heat.Heat = PostRaidHeatReset; heat.TimesRaided++; }
+					result = $"{targetName} was found under the desk holding a ledger. Fined {hideFine:N0} GBC. Embarrassing.";
+					BroadcastRaidResult( result, false );
+				}
+				break;
+
+			case RaidAction.Flee:
+				// Sprint for the fire exit. You escape the fine — your bags don't.
+				if ( wallet is not null )
+				{
+					int seized = wallet.TokenHoldings.Count;
+					foreach ( var tokenId in wallet.TokenHoldings.Keys.ToList() )
+						wallet.RemoveTokenHolding( tokenId, float.MaxValue );
+					float travelFine = wallet.GoblinCoin * 0.1f;
+					wallet.GoblinCoin -= travelFine;
+					if ( heat is not null ) heat.Heat = PostRaidHeatReset;
+					result = seized > 0
+						? $"{targetName} fled through the fire exit! The SEC seized {seized} token bag(s) left on the desk."
+						: $"{targetName} fled through the fire exit! Nothing to seize but the office plant.";
+					BroadcastRaidResult( result, true );
+				}
+				else
+				{
+					goto case RaidAction.AcceptFate;
+				}
+				break;
+
 			case RaidAction.AcceptFate:
 			default:
 				float fullFine = (wallet?.GoblinCoin ?? 0) * RaidFinePercent;
@@ -295,11 +351,23 @@ public sealed class SECSystem : Component
 	//  BROADCASTS
 	// ═══════════════════════════════════════
 
-	[Rpc.Owner]
 	private void SendWarning( Connection target )
+	{
+		using ( Rpc.FilterInclude( c => c == target ) )
+		{
+			ClientReceiveWarning();
+		}
+	}
+
+	[Rpc.Broadcast]
+	private void ClientReceiveWarning()
 	{
 		Sound.Play( "sounds/event_negative.sound" );
 		Log.Warning( "SEC WARNING: Your activities have attracted regulatory attention!" );
+
+		var feed = Scene.GetAllComponents<UI.NotificationFeed>().FirstOrDefault();
+		feed?.PushNotification( "⚠️ SEC WARNING",
+			"Your heat is climbing. Cool it, or Grimsby pays you a visit.", "negative" );
 	}
 
 	[Rpc.Broadcast]
@@ -334,7 +402,9 @@ public enum RaidAction
 	ShredDocuments = 0,
 	Bribe = 1,
 	BlameAnother = 2,
-	AcceptFate = 3
+	AcceptFate = 3,
+	Hide = 4,
+	Flee = 5
 }
 
 /// <summary>

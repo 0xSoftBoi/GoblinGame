@@ -69,6 +69,15 @@
 			</div>
 		</div>
 
+		<!-- Rugger Reveal -->
+		@if ( !string.IsNullOrEmpty( RuggerReveal ) )
+		{
+			<div class="rugger-reveal">
+				<div class="rugger-reveal-label">🎭 THE AUDIT IS FINAL</div>
+				<div class="rugger-reveal-text">@RuggerReveal</div>
+			</div>
+		}
+
 		<!-- End-Round Awards -->
 		@if ( Awards.Count > 0 )
 		{
@@ -223,6 +232,17 @@
 .award-desc { font-size: 10px; color: #555; }
 
 /* Footer */
+.rugger-reveal {
+	margin: 10px 0;
+	padding: 12px 16px;
+	border: 2px solid #ff44ff;
+	border-radius: 8px;
+	background: rgba(255, 68, 255, 0.08);
+	text-align: center;
+}
+.rugger-reveal-label { font-size: 11px; letter-spacing: 2px; color: #ff44ff; margin-bottom: 6px; }
+.rugger-reveal-text { font-size: 14px; color: #ffccff; }
+
 .results-footer {
 	padding: 12px 20px;
 	border-top: 1px solid #222;
@@ -245,6 +265,7 @@
 	public string WinnerTitle { get; set; } = "THE ULTIMATE GOBLIN";
 	public List<PlayerResult> Players { get; set; } = new();
 	public List<AwardData> Awards { get; set; } = new();
+	public string RuggerReveal { get; set; } = "";
 
 	protected override void OnUpdate()
 	{
@@ -258,6 +279,8 @@
 
 		MaxRounds = state.MaxRounds;
 		CountdownSeconds = (int)state.PhaseTimeRemaining;
+
+		RuggerReveal = SocialDeduction.Instance?.FinalRuggerReveal ?? "";
 
 		// Build scoreboard
 		Players = Scene.GetAllComponents<CryptoWallet>()

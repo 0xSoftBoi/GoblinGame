@@ -1,34 +1,35 @@
 ═══════════════════════════════════════════════════════
-  GOBLIN CHAIN — Custom Input Actions
-  Set these in S&box: Project Settings → Input
+  GOBLIN CHAIN — Input Actions
 ═══════════════════════════════════════════════════════
 
-These CUSTOM actions must be added manually in the S&box editor.
-Standard actions (Forward, Backward, Left, Right, Jump, Run,
-Crouch, Use, Attack1, Voice) are built-in.
+All actions below are now defined in .sbproj under
+Metadata.InputSettings — no manual editor setup required.
+(Defining InputSettings replaces the engine defaults, which is
+why the standard movement actions are listed there too.)
 
-┌────────────────┬─────────────┬──────────────────────────┐
-│ Action Name    │ Default Key │ Used By                  │
-├────────────────┼─────────────┼──────────────────────────┤
-│ Trade          │ T           │ PlayerInput → TradePanel  │
-│ OpenMarket     │ M           │ PlayerInput → Market UI   │
-│ Sabotage       │ Q           │ PlayerInput → EMP throw   │
-│ PlaceRig       │ E           │ PlayerInput → Rig spawn   │
-│ CycleToken     │ Tab         │ PlayerInput → Token cycle  │
-└────────────────┴─────────────┴──────────────────────────┘
+┌────────────────┬─────────────┬──────────────────────────────┐
+│ Action Name    │ Default Key │ Used By                      │
+├────────────────┼─────────────┼──────────────────────────────┤
+│ Trade          │ T           │ PlayerInput → GoblinPhone    │
+│ AltTrade       │ Y           │ PlayerInput → TradePanel     │
+│ OpenMarket     │ M           │ PlayerInput → MarketOverlay  │
+│ CreateToken    │ C           │ PlayerInput → TokenCreator   │
+│ CycleToken     │ Tab         │ PlayerInput (hint only)      │
+│ Sabotage       │ Q           │ PlayerInput → EMP throw      │
+│ PlaceRig       │ E           │ PlayerInput → Rig spawn      │
+│ CallAudit      │ V           │ PlayerInput → Audit accuse   │
+│ Voice          │ B           │ ProximityVoice push-to-talk  │
+│ Menu           │ Escape      │ EscapeMenu                   │
+└────────────────┴─────────────┴──────────────────────────────┘
 
-NOTE: "Use" (default: E) is a built-in action already bound to E.
-      "PlaceRig" is separate so we can distinguish interaction
-      from rig placement. You may map both to E if you prefer
-      context-sensitive behavior (handled in PlayerInput.cs).
+Standard actions (also in InputSettings):
+  Forward (W) · Backward (S) · Left (A) · Right (D)
+  Jump (Space) · Run (Shift) · Crouch (Ctrl) · Use (E)
 
-Standard S&box actions used by GoblinPlayer.cs:
-  Forward    (W)
-  Backward   (S)
-  Left       (A)
-  Right      (D)
-  Jump       (Space)
-  Run        (Shift)
-  Crouch     (Ctrl)
-  Use        (E)       — interaction raycast
-  Voice      (V)       — push-to-talk
+NOTES:
+- "Trade" (T) historically toggled the trade panel; it now opens
+  the GoblinPhone. The trade panel moved to AltTrade (Y).
+- Voice moved from V to B because CallAudit claimed V. Accusing
+  someone of securities fraud should not also hot-mic you.
+- "Use" and "PlaceRig" share E on purpose: PlaceRig is phase-gated
+  to the Create phase, Use handles general interaction.
