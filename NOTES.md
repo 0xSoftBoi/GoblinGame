@@ -140,6 +140,34 @@ exposure, re-rollable by tweaking parameters:
   wrong platform). Tinted citizen stays the approach; a real goblin model
   is a commission/editor job.
 
+### Distribution research (2026-07-01)
+
+Where can this game be released? Verified against sbox.game docs + press:
+
+- **s&box launched publicly April 28, 2026** (free on Steam). Games ship on
+  sbox.game by default; devs are paid from "The Play Fund" (daily pool split
+  by player-hours, funded by GMod profits — ~$500k paid out as of launch).
+- **Standalone Steam releases are real**: Facepunch signed a Source 2
+  license with Valve (March 2026) allowing s&box games to be exported as
+  standalone executables and sold on Steam **royalty-free** — own App ID,
+  no s&box install required, working multiplayer (Steam networking +
+  lobbies), no code whitelist in standalone, full engine source access.
+- **Current gate**: standalone export is "in preview." Distribution needs
+  Valve approval per-title for now; Facepunch says don't distribute
+  exported builds without a license from them (contact email is on
+  sbox.game/dev/doc/exporting). Pilot program running (first title:
+  My Summer Cottage). Apply early.
+- **Terms**: publish to any storefront (itch.io etc.) as long as the game
+  is also on Steam. PC only — no console/mobile exports yet.
+- **Asset caveat to confirm when applying**: our facepunch.* cloud props
+  are free for s&box projects; confirm they're covered in standalone
+  exports (expected yes — an export IS an s&box project). All generated
+  assets (audio/music/posters) are ours outright.
+- **Porting to Unity/Godot judged not worth it**: ~40% of the code (game
+  logic/data) ports; all 17 Razor UI panels, the [Sync]/RPC networking
+  layer, and every cloud asset would need rewriting/replacing. Months of
+  solo work vs. an export wizard.
+
 ### Known gaps / future work
 
 - **Era environments are now cloud-furnished but not architectural** — same
