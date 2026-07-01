@@ -222,35 +222,9 @@ public sealed class SocialDeduction : Component
 	//  AUDIT VOTE
 	// ═══════════════════════════════════════
 
-	[Rpc.Host]
-	public void RequestAudit()
-	{
-		var caller = Rpc.Caller;
-		var player = FindPlayer( caller );
-		if ( player is null ) return;
-
-		if ( AuditsUsed >= MaxAudits )
-		{
-			Log.Warning( "Max audits reached" );
-			return;
-		}
-
-		if ( AuditInProgress )
-		{
-			Log.Warning( "Audit already in progress" );
-			return;
-		}
-
-		var wallet = player.Components.Get<CryptoWallet>();
-		if ( wallet is null || !wallet.TrySpend( AuditCost ) ) return;
-
-		AuditsUsed++;
-		AuditInProgress = true;
-		AuditVoteTimer = AuditVoteDuration;
-		_auditVotes.Clear();
-
-		BroadcastAuditStarted( caller.DisplayName, "", Guid.Empty );
-	}
+	// (An untargeted RequestAudit() endpoint used to live here — removed.
+	// It never set CurrentAccusedId, so its audits could not resolve. The
+	// V-key accusation path below is the only way to start an audit.)
 
 	/// <summary>
 	/// Called from PlayerInput (V key): starts an audit if none in progress,

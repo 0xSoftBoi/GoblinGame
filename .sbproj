@@ -22,7 +22,21 @@
     "Description": "GOBLIN CHAIN is a chaotic 4-8 player party game set in the goblin stock market.\n\nCreate your own meme token. Shill it on GoblinTwitter. Manipulate the market. Rug pull your friends before they rug pull you.\n\nOne player is secretly the RUGGER — a social deduction role with access to the Grand Rug, which steals everyone's entire portfolio at once. Can the other goblins call an Audit Vote in time?\n\n\nFEATURES\n- Token creation and naming — full meme coin lifecycle\n- GoblinTwitter — in-game social feed with likes, FUD, and reports that move prices\n- Market manipulation — wash trading, pump groups, short selling\n- SEC raids — get too greedy and the regulators show up\n- 50 NPC retail investors who believe everything they read\n- Proximity voice chat for backroom deals\n- Mining rigs with sabotage and EMP grenades\n- Twitch chat integration — viewers can shill tokens and vote on SEC raid outcomes\n- Auto-clip recorder for rug pull moments\n\n\nThis is a comedy party game. No real crypto involved.",
     "Public": true,
     "ReferencedPackages": [],
-    "PackageReferences": [],
+    "PackageReferences": [
+      "facepunch.office_desk",
+      "facepunch.office_chair",
+      "facepunch.tv",
+      "facepunch.cardboard_box",
+      "facepunch.wooden_crate",
+      "facepunch.pallet",
+      "facepunch.pizza_box",
+      "facepunch.traffic_cone",
+      "facepunch.couch",
+      "facepunch.microwave",
+      "facepunch.watermelon",
+      "facepunch.atm",
+      "facepunch.fridge"
+    ],
     "Compiler": {
       "RootNamespace": "GoblinChain",
       "DefineConstants": "SANDBOX;ADDON;DEBUG"

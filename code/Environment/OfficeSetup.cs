@@ -61,12 +61,19 @@ public sealed class OfficeSetup : Component
 		_hasSpawned = true;
 
 		ClearOffice();
+		SpawnMarketBoard();
+		SpawnPosters();
+
+		// Furniture: editor-assigned prefabs win; otherwise free cloud assets;
+		// otherwise dev-box placeholders. Board + posters spawn above so they
+		// don't count toward the furniture threshold.
+		int baseline = _spawnedProps.Count;
 		SpawnDeskLayout();
 		SpawnUtilityStations();
 		SpawnDecorations();
-		SpawnMarketBoard();
-		SpawnPosters();
-		if ( _spawnedProps.Count < 5 )
+		if ( _spawnedProps.Count - baseline < 5 )
+			SpawnCloudOffice();
+		if ( _spawnedProps.Count - baseline < 5 )
 			SpawnCodeBasedProps();
 
 		Log.Info( $"Office spawned: {EraNames[OfficeEra]} ({_spawnedProps.Count} props)" );
@@ -316,6 +323,126 @@ public sealed class OfficeSetup : Component
 			go.Components.Create<BoxCollider>();
 
 		go.Components.Create<PhysicsProp>().ThrowForce = mass > 80f ? 400f : 700f;
+	}
+
+	// ── Cloud assets (free Facepunch props from sbox.game) ────────────────
+	// All idents verified against sbox.game. Downloaded/cached by the engine
+	// at first load; if anything fails (offline), we fall back to dev boxes.
+
+	private const string CloudDesk = "facepunch.office_desk";
+	private const string CloudChair = "facepunch.office_chair";
+	private const string CloudMonitor = "facepunch.tv"; // chart terminal on every desk
+
+	// Per-era clutter — the office tells the story of the money
+	private static readonly (string ident, float mass)[][] EraClutter =
+	{
+		// Era 0 — Garage Startup: shipping debris and cold pizza
+		new[] { ("facepunch.cardboard_box", 6f), ("facepunch.wooden_crate", 30f),
+				("facepunch.pallet", 25f), ("facepunch.pizza_box", 2f),
+				("facepunch.traffic_cone", 4f) },
+		// Era 1 — Funded WeWork: soft furniture and a kitchen nobody cleans
+		new[] { ("facepunch.couch", 60f), ("facepunch.microwave", 15f),
+				("facepunch.pizza_box", 2f), ("facepunch.watermelon", 8f),
+				("facepunch.cardboard_box", 6f) },
+		// Era 2 — Crypto Exchange: private ATMs and wall-to-wall screens
+		new[] { ("facepunch.atm", 150f), ("facepunch.tv", 12f),
+				("facepunch.couch", 60f), ("facepunch.traffic_cone", 4f),
+				("facepunch.watermelon", 8f) },
+		// Era 3 — Penthouse: more ATMs. The ATMs are the decor now.
+		new[] { ("facepunch.atm", 150f), ("facepunch.fridge", 90f),
+				("facepunch.couch", 60f), ("facepunch.tv", 12f),
+				("facepunch.watermelon", 8f) },
+	};
+
+	/// <summary>
+	/// Builds the office from free cloud assets when no prefabs are assigned.
+	/// </summary>
+	private void SpawnCloudOffice()
+	{
+		int before = _spawnedProps.Count;
+
+		// Desk grid with chairs and chart terminals
+		var startX = OfficeCenter.x - ((DesksPerRow - 1) * DeskSpacing) / 2f;
+		var startY = OfficeCenter.y - ((DeskRows - 1) * RowSpacing) / 2f;
+
+		for ( int row = 0; row < DeskRows; row++ )
+		{
+			for ( int col = 0; col < DesksPerRow; col++ )
+			{
+				var pos = new Vector3(
+					startX + col * DeskSpacing,
+					startY + row * RowSpacing,
+					OfficeCenter.z );
+				float deskYaw = row % 2 == 0 ? 0f : 180f;
+
+				var desk = SpawnCloudProp( CloudDesk, pos, Rotation.FromYaw( deskYaw ), 80f );
+				if ( desk is null ) return; // cloud unavailable — bail to dev-box fallback
+
+				var chairOffset = row % 2 == 0 ? new Vector3( 0, -50, 0 ) : new Vector3( 0, 50, 0 );
+				SpawnCloudProp( CloudChair, pos + chairOffset,
+					Rotation.FromYaw( deskYaw + _rng.Next( -30, 30 ) ), 25f );
+
+				if ( _rng.NextDouble() > 0.4 )
+					SpawnCloudProp( CloudMonitor, pos + new Vector3( 0, 0, 34 ),
+						Rotation.FromYaw( deskYaw + 180f ), 12f );
+			}
+		}
+
+		// Era clutter around the edges — richer eras, weirder stuff
+		var clutter = EraClutter[Math.Clamp( OfficeEra, 0, EraClutter.Length - 1 )];
+		int clutterCount = 6 + OfficeEra * 3;
+		for ( int i = 0; i < clutterCount; i++ )
+		{
+			var (ident, mass) = clutter[_rng.Next( clutter.Length )];
+			var pos = OfficeCenter + new Vector3(
+				((float)_rng.NextDouble() - 0.5f) * OfficeWidth * 0.9f,
+				((float)_rng.NextDouble() - 0.5f) * OfficeDepth * 0.9f,
+				0 );
+			SpawnCloudProp( ident, pos, Rotation.FromYaw( _rng.Next( 360 ) ), mass );
+		}
+
+		Log.Info( $"[OfficeSetup] Spawned {_spawnedProps.Count - before} cloud-asset props ({EraNames[OfficeEra]})" );
+	}
+
+	/// <summary>
+	/// Spawn one physics prop from a cloud model ident. Returns null if the
+	/// package can't be loaded (offline / bad ident) so callers can fall back.
+	/// </summary>
+	private GameObject SpawnCloudProp( string ident, Vector3 pos, Rotation rot, float mass )
+	{
+		Model model;
+		try
+		{
+			model = Cloud.Model( ident );
+		}
+		catch ( Exception e )
+		{
+			Log.Warning( $"[OfficeSetup] Cloud model '{ident}' failed to load: {e.Message}" );
+			return null;
+		}
+		if ( model is null || model.IsError ) return null;
+
+		var go = Scene.CreateObject();
+		go.Name = ident;
+		go.WorldPosition = pos;
+		go.WorldRotation = rot;
+		go.Tags.Add( "prop" );
+
+		var renderer = go.Components.Create<ModelRenderer>();
+		renderer.Model = model;
+
+		var collider = go.Components.Create<ModelCollider>();
+		collider.Model = model;
+
+		var rb = go.Components.Create<Rigidbody>();
+		rb.MassOverride = mass;
+
+		var pp = go.Components.Create<PhysicsProp>();
+		pp.ThrowForce = mass > 80f ? 400f : 700f;
+
+		go.NetworkSpawn();
+		_spawnedProps.Add( go );
+		return go;
 	}
 
 	/// <summary>

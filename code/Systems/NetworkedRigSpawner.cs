@@ -41,7 +41,7 @@ public sealed class NetworkedRigSpawner : Component
 		var state = GameStateManager.Instance;
 		if ( state is not null && !state.CanPlaceRigs )
 		{
-			NotifyClient( caller, "Can only place rigs during Mining phase!" );
+			NotifyClient( caller, "Can only place rigs during Create phase!" );
 			return;
 		}
 
@@ -79,6 +79,7 @@ public sealed class NetworkedRigSpawner : Component
 
 		var rig = RigPrefab.Clone( position, rotation );
 		rig.Name = $"Rig_{caller.DisplayName}_{owned + 1}";
+		DressRig( rig );
 		rig.NetworkSpawn( caller );
 
 		// 7. Update wallet hash rate
@@ -88,6 +89,28 @@ public sealed class NetworkedRigSpawner : Component
 		BroadcastRigPlaced( caller.DisplayName, position, owned + 1 );
 
 		Log.Info( $"Rig placed by {caller.DisplayName} at {position} (#{owned + 1})" );
+	}
+
+	/// <summary>
+	/// Swap the prefab's dev-box for a real model. A goblin mining rig is,
+	/// canonically, a microwave with a GPU inside. Set before NetworkSpawn
+	/// so the spawn snapshot carries it; dev-box stays if the cloud is down.
+	/// </summary>
+	private void DressRig( GameObject rig )
+	{
+		try
+		{
+			var model = Cloud.Model( "facepunch.microwave" );
+			if ( model is null || model.IsError ) return;
+
+			var renderer = rig.Components.Get<ModelRenderer>( FindMode.EverythingInSelfAndDescendants );
+			if ( renderer is not null )
+				renderer.Model = model;
+		}
+		catch ( System.Exception e )
+		{
+			Log.Warning( $"[RigSpawner] Cloud rig model unavailable: {e.Message}" );
+		}
 	}
 
 	// --- Broadcasts ---

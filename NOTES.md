@@ -86,11 +86,34 @@ still surface small issues.**
 - `TokenSystem.CleanupRound()` was never called → now runs between rounds. Rug pulls now phase-gated to Shill/Chaos (were possible in Pregame).
 - Pivot renamed tokens to "Name V2" always → random suffix pool (" (Audited)", " Classic", " AI", " Trust Edition", …).
 
+### Free cloud assets (added after the audit pass)
+
+The office and rigs now use **free Facepunch models from sbox.game**, loaded
+at runtime via `Cloud.Model("facepunch.x")` and listed in .sbproj
+`PackageReferences`. Every ident was verified to exist against sbox.game
+(fetch the package page with a crawler UA; real packages return a
+"<Name> from Facepunch" title). Verified idents used:
+office_desk, office_chair, tv, cardboard_box, wooden_crate, pallet,
+pizza_box, traffic_cone, couch, microwave, watermelon, atm, fridge.
+
+- `OfficeSetup.SpawnCloudOffice()`: desk grid (desk + chair + TV terminal)
+  plus per-era clutter — garage era gets pallets and pizza boxes, exchange
+  and penthouse eras get **ATMs as decor**. Fallback chain: editor prefabs →
+  cloud assets → dev boxes (and the old dev-box fallback was actually dead:
+  the `< 5` check ran after the market board + 8 posters spawned, so it
+  never fired — the office shipped empty. Fixed by counting furniture only).
+- Mining rigs are now canonically **a microwave with a GPU inside**
+  (`NetworkedRigSpawner.DressRig`, model swapped before NetworkSpawn so the
+  snapshot syncs; dev-box remains if the cloud is unreachable).
+- Idents that do NOT exist (probed, don't waste time): server_rack,
+  coffee_machine, whiteboard, potted_plant, keyboard, monitor,
+  filing_cabinet, desk_lamp, water_cooler, computer variants.
+
 ### Known gaps / future work
 
-- **Era environments are cosmetic-only**: OfficeSetup prefab lists are
-  unassigned in main.scene, so every era spawns the code-based fallback
-  props. Era numbers (volatility, raid threshold) do progress.
+- **Era environments are now cloud-furnished but not architectural** — same
+  room, richer clutter per era. Walls/lighting per era still future work.
+  Era numbers (volatility, raid threshold) progress as before.
 - **Insider leaks** (stretch item) not built — short selling was the
   substitute.
 - No physical Auditor NPC / raid chase sequence; raid is a decision UI with

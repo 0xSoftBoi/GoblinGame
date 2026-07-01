@@ -110,8 +110,7 @@ public sealed class PlayerInput : Component
 		if ( _phoneOpen && _tokenCreatorOpen )
 		{
 			_tokenCreatorOpen = false;
-			var tc = Scene.GetAllComponents<UI.TokenCreator>().FirstOrDefault();
-			if ( tc is not null ) tc.IsOpen = false;
+			Scene.GetAllComponents<UI.TokenCreator>().FirstOrDefault()?.Hide();
 		}
 	}
 
@@ -132,7 +131,9 @@ public sealed class PlayerInput : Component
 		var creator = Scene.GetAllComponents<UI.TokenCreator>().FirstOrDefault();
 		if ( creator is not null )
 		{
-			creator.IsOpen = _tokenCreatorOpen;
+			// Show()/Hide() (not raw IsOpen) so the wizard resets to stage 0
+			if ( _tokenCreatorOpen ) creator.Show();
+			else creator.Hide();
 		}
 
 		// Close phone if creator opens
