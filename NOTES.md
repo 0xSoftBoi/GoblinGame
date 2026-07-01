@@ -168,6 +168,22 @@ Where can this game be released? Verified against sbox.game docs + press:
   layer, and every cloud asset would need rewriting/replacing. Months of
   solo work vs. an export wizard.
 
+**Roblox (asked 2026-07-01):** not a port — a from-scratch remake in
+Luau/Roblox Studio (different engine, UI, networking; zero C# carries).
+What transfers: the design, all the writing (shill copy/lore/quips), our
+generated audio + poster art (ours outright; Facepunch cloud props do NOT
+transfer). Genre precedent is strong — "Bitcoin Miner" is a long-running
+hit and simulated-crypto tycoons are explicitly fine as long as currency
+is purely in-game; simulated *gambling* is restricted to 17+ experiences,
+so ship under a 17+ maturity label (which also matches the comedy).
+Economics: F2P + Robux (30% marketplace fee, DevEx $0.0038/R$; new US-18+
+rate $0.0054/R$ since June 2026 — Roblox is courting adult experiences).
+Effective take-home ~25-35% of player spend vs ~70% on Steam, but the
+audience and party-game player liquidity are orders of magnitude larger.
+Verdict: treat as a possible SECOND product after the s&box version
+proves the concept; budget 2-4 months solo. Sequencing: sbox.game →
+standalone Steam pilot → Roblox remake if clips/retention justify it.
+
 ### Known gaps / future work
 
 - **Era environments are now cloud-furnished but not architectural** — same
