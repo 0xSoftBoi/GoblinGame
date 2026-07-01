@@ -466,7 +466,7 @@ def poster_waves():
 
 
 POSTER_ART = [
-    lambda: poster_sunburst((228, 210, 170)),   # 0 DIAMOND HANDS
+    lambda: poster_diamond(),                   # 0 DIAMOND HANDS
     lambda: poster_rug(),                       # 1 MOVE FAST AND RUG THINGS
     lambda: poster_moon(),                      # 2 TO THE MOON
     lambda: poster_chart(),                     # 3 PAST PERFORMANCE

@@ -13,6 +13,9 @@ public sealed class MusicManager : Component
 {
 	[Property] public bool MusicEnabled { get; set; } = true;
 
+	// Matches the "Volume" set in the music_*.sound assets
+	[Property] public float BaseMusicVolume { get; set; } = 0.30f;
+
 	// Track lengths come from the generator's output — keep in sync if you
 	// re-roll the music with different BPM/bar counts.
 	private static readonly Dictionary<GamePhase, (string path, float length)> Tracks = new()
@@ -46,11 +49,13 @@ public sealed class MusicManager : Component
 			StartTrack( phase );
 		}
 
-		// Duck under the sirens when a raid is live
+		// Duck under the sirens when a raid is live. SoundHandle.Volume is
+		// absolute (it replaces the .sound asset's 0.30 mix level), so we
+		// always scale from that base rather than assigning 1.0.
 		if ( _handle is not null )
 		{
 			var sec = SECSystem.Instance;
-			_handle.Volume = sec is not null && sec.RaidActive ? 0.4f : 1f;
+			_handle.Volume = BaseMusicVolume * (sec is not null && sec.RaidActive ? 0.4f : 1f);
 		}
 	}
 
